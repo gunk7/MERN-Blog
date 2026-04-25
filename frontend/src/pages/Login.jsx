@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { LogIn, Mail, Lock } from "lucide-react";
-import { loginSchema } from "../validation/authSchemas";
+import { loginSchema } from "../validation/schemasValidation";
 import { login } from "../redux/thunks/authThunks";
 import {
   isLoggedIn,
@@ -25,6 +25,8 @@ const Login = () => {
   const [openOtpModal, setOpenOtpModal] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [isForgotPwdOpen, setIsForgotPwdOpen] = useState(false);
+  const [shouldAutoSend, setShouldAutoSend] = useState(false);
+
   useEffect(() => {
     if (access && user) {
       if (user.role === "admin") {
@@ -49,13 +51,21 @@ const Login = () => {
           navigate("/profile");
         }
       } catch (err) {
-        if (
+        const isUnverified =
           err ===
-          "Email not verified. Please verify your email before logging in."
-        ) {
+            "Email not verified. Please verify your email before logging in." ||
+          err === "Verification record expired. Please register again" ||
+          err ===
+            "Account not verified. Please check your email to complete signup.";
+
+        if (isUnverified) {
           setUnverifiedEmail(data.email);
+          setShouldAutoSend(true);
           setOpenOtpModal(true);
-          toast.info("Verification required. We've opened the entry portal.");
+
+          toast.info(
+            "Verification Required: Please enter the code sent to your email.",
+          );
         } else {
           toast.error(err || "Something went wrong");
         }
@@ -170,6 +180,7 @@ const Login = () => {
       {openOtpModal && (
         <OtpModal
           email={unverifiedEmail}
+          shouldAutoSend={shouldAutoSend}
           onClose={() => setOpenOtpModal(false)}
         />
       )}

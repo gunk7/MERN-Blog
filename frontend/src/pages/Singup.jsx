@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Mail, Lock, User, UserPlus } from "lucide-react";
-import { signupSchema } from "../validation/authSchemas";
+import { signupSchema } from "../validation/schemasValidation";
 import { signup } from "../redux/thunks/authThunks";
 import {
   isLoggedIn,
@@ -201,6 +201,7 @@ const Signup = () => {
           {isVerifying && (
             <OtpModal
               email={tempEmail}
+              shouldAutoSend={false}
               onClose={() => setShowModal(false)}
             />
           )}

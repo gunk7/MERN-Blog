@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import { getProfile } from "../redux/thunks/userThunks";
 import Edit from "../modals/Edit";
-import { isLoggedIn } from "../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectCurrentUser,
+} from "../redux/selectors/authSelectors";
 import UpdatePassword from "../modals/UpdatePassword";
 
 const MyProfile = () => {
@@ -25,7 +28,7 @@ const MyProfile = () => {
 
   const { profile, loading } = useSelector((state) => state.users);
   const access = useSelector(isLoggedIn);
-
+  const user = useSelector(selectCurrentUser);
   useEffect(() => {
     if (!access) navigate("/login");
   }, [access, navigate]);
@@ -55,18 +58,19 @@ const MyProfile = () => {
 
   return (
     /* h-full min-h-screen ensures the background covers everything */
-    <main className="min-h-screen w-full bg-[#FBFBFE] pt-32 pb-20 px-4 sm:px-8 md:px-16">
+    <main className="min-h-screen w-full bg-[#FBFBFE] pt-32 pb-20 px-6">
       <div className="max-w-7xl mx-auto w-full">
         {/* --- HERO HEADER --- */}
         <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-center justify-between gap-8 mb-12">
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative">
               <img
-                src={profileImage}
+                src={ "src/assets/image.png"}
                 alt="Profile"
                 className="w-40 h-40 md:w-48 md:h-48 rounded-[3.5rem] object-cover shadow-xl border-4 border-white"
               />
-              <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white p-3 rounded-2xl shadow-lg border-4 border-white">
+
+              <div className="absolute -bottom-2 -right-2 bg-purple-900 text-white p-3 rounded-2xl shadow-lg border-4 border-white">
                 <ShieldCheck size={20} />
               </div>
             </div>
@@ -78,7 +82,7 @@ const MyProfile = () => {
                 {userDetail?.firstName} {userDetail?.lastName}
               </h1>
               <p className="text-slate-400 font-medium text-lg mt-1">
-                @{userDetail?.username}
+                @{userDetail?.username || user?.username}
               </p>
             </div>
           </div>
@@ -86,17 +90,13 @@ const MyProfile = () => {
           {isOwner && (
             <button
               onClick={() => setIsEditModalOpen(true)}
-              className="px-8 py-4 bg-indigo-900 text-white rounded-2xl font-bold hover:bg-indigo-600 transition-all flex items-center gap-2"
+              className="px-8 py-4 bg-fuchsia-700 text-white rounded-2xl font-bold hover:bg-fuchsia-900 transition-all flex items-center gap-2"
             >
               <Edit3 size={18} /> Edit Profile
             </button>
           )}
         </div>
 
-        {/* --- 3-COLUMN GRID --- 
-            lg:grid-cols-3 forces 3 columns on desktop. 
-            lg:gap-8 provides the horizontal spread.
-        */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* --- LEFT COLUMN: COMBINED ABOUT & DETAILS (Spans 8 columns) --- */}
           <div className="lg:col-span-8 flex flex-col gap-8">
@@ -110,6 +110,21 @@ const MyProfile = () => {
                     <DetailRow label="Email" value={userDetail?.email} />
                     <DetailRow label="Country" value={userDetail?.country} />
                     <DetailRow label="Gender" value={userDetail?.gender} />
+                    <DetailRow
+                      label="Date of Birth"
+                      value={
+                        userDetail?.dob
+                          ? new Date(profile.userDetail.dob).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              },
+                            )
+                          : "Hidden"
+                      }
+                    />
                   </div>
                 </div>
                 {/* About Sub-section */}
@@ -154,7 +169,7 @@ const MyProfile = () => {
 
               <button
                 onClick={() => setIsPwdOpen(true)}
-                className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-2xl transition-all group"
+                className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-fuchsia-900 hover:text-white rounded-2xl transition-all group"
               >
                 <div className="flex items-center gap-3 font-bold text-sm">
                   <Lock size={16} /> Change Password
@@ -163,10 +178,6 @@ const MyProfile = () => {
                   size={16}
                   className="opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
                 />
-              </button>
-
-              <button className="w-full flex items-center gap-3 p-5 rounded-2xl text-rose-500 font-bold text-sm hover:bg-rose-50 transition-all">
-                <LogOut size={16} /> Deactivate Account
               </button>
             </div>
           </div>

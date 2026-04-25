@@ -64,7 +64,7 @@ exports.signup = async (req, res) => {
     });
 
     const mail = emailTemplates.verificationOTP(otp);
-    await mailSend(email, mail.subject, mail.html);
+     mailSend(email, mail.subject, mail.html);
 
     return res.status(200).json({
       success: true,
@@ -194,7 +194,7 @@ exports.resendOtp = async (req, res) => {
     pendingUser.otp.attempts = 0;
 
     await pendingUser.save();
-
+console.log(pendingUser)
     const mail = emailTemplates.verificationOTP(newOtp);
     await mailSend(email, mail.subject, mail.html);
 
@@ -214,45 +214,41 @@ exports.resendOtp = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    console.log(req.body);
     const { email, password } = req.body;
+    const normalizedEmail = email?.toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        data: false,
         message: "Invalid Credentials",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: normalizedEmail });
+
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        data: false,
-        message: "Invalid Credentials",
-      });
-    }
+      const isInVerifyTable = await UserVerify.findOne({ email: normalizedEmail });
+      
+      if (isInVerifyTable) {
+        return res.status(403).json({
+          success: false,
+          message: "Account not verified. Please check your email to complete signup.",
+        });
+      }
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
       return res.status(401).json({
         success: false,
-        data: false,
         message: "Invalid Credentials",
       });
     }
 
     if (!user.isAccountVerified) {
-      const pendingVerification = await UserVerify.findOne({
-        email: email.toLowerCase(),
-      });
+      const pendingVerification = await UserVerify.findOne({ email: normalizedEmail });
 
       if (pendingVerification) {
         return res.status(403).json({
           success: false,
-          message:
-            "Email not verified. Please verify your email before logging in.",
+          message: "Email not verified. Please verify your email before logging in.",
         });
       } else {
         return res.status(403).json({
@@ -262,17 +258,25 @@ exports.login = async (req, res) => {
       }
     }
 
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid Credentials",
+      });
+    }
+
     const token = generateToken(user);
     res.status(200).json({
       success: true,
       data: { token, user },
       message: "Login Successful",
     });
+
   } catch (error) {
     console.error("Login Error:", error.message);
     res.status(500).json({
       success: false,
-      data: false,
       message: "Login Unsuccessful",
     });
   }

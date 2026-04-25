@@ -6,8 +6,7 @@ import { resendOtp, verifyOtp } from "../redux/thunks/authThunks";
 import { toast } from "react-toastify";
 import { selectAuthLoading } from "../redux/selectors/authSelectors";
 
-const OtpModal = ({ email, onClose }) => {
-  console.log("OTP Modal received email:", email);
+const OtpModal = ({ email, onClose, shouldAutoSend = false }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [timer, setTimer] = useState(30);
   const inputRefs = useRef([]);
@@ -23,13 +22,19 @@ const OtpModal = ({ email, onClose }) => {
     }
   }, [timer]);
 
-
   const maskedEmail = email
     ? email.replace(
         /^(.)(.*)(.@.*)$/,
         (_, a, b, c) => a + "*".repeat(b.length) + c,
       )
     : "";
+  useEffect(() => {
+    // Only trigger the API call if specifically requested (Login flow)
+    if (shouldAutoSend && email) {
+      dispatch(resendOtp({ email }));
+      console.log("Auto-sending OTP for login flow...");
+    }
+  }, [shouldAutoSend, email, dispatch]);
 
   const handleChange = (value, index) => {
     if (isNaN(value)) return;
@@ -52,7 +57,6 @@ const OtpModal = ({ email, onClose }) => {
     if (otpValue.length < 6) return toast.warn("Enter 6-digit code");
 
     const resultAction = await dispatch(verifyOtp({ email, otp: otpValue }));
-    console.log(resultAction);
     if (verifyOtp.fulfilled.match(resultAction)) {
       toast.success("Account Verified Successfully");
       onClose();

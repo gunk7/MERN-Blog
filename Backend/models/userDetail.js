@@ -25,12 +25,10 @@ const UserDetailsSchema = new mongoose.Schema(
 
     bio: {
       type: String,
-      required: [true, "Bio is Required"],
       max: 200,
     },
     dob: {
       type: Date,
-      required: [true, "Date of Birth is Required"],
       validate: {
         validator: (value) => value <= new Date(),
         message: "Date of Birth is invalid",
@@ -38,8 +36,7 @@ const UserDetailsSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      required: [true, "Gender is required"],
-      enum: ["male", "female", "other"],
+      enum: ["male", "female", "other","prefer not to say"],
       lowercase: true,
       trim: true,
     },

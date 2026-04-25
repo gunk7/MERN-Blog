@@ -47,14 +47,10 @@ const UserSchema = new mongoose.Schema(
 );
 
 UserSchema.pre("save", async function () {
-  // 1. If the password hasn't changed at all, skip.
   if (!this.isModified("password")) return;
 
-  // 2. Check if the string is already a valid Bcrypt hash.
-  // Bcrypt hashes follow a specific structure: $2[abyp]$cost$salt+hash
   const isAlreadyHashed = /^\$2[ayb]\$.{56}$/.test(this.password);
 
-  // 3. If it's already a hash (migrating from UserVerify), stop here.
   if (isAlreadyHashed) return;
 
   try {

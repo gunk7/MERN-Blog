@@ -5,7 +5,7 @@ exports.authMiddleware = async (req, res, next) => {
   let token;
   const headerAuth = req.headers.authorization;
 
-  if (!headerAuth && !headerAuth.startsWith("Bearer ")) {
+  if (!headerAuth || !headerAuth.startsWith("Bearer ")) {
     return res.status(401).json({
       data: false,
       success: false,

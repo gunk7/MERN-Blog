@@ -7,5 +7,6 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 route.get("/", authMiddleware, isAdmin, adminController.getAllUsers);
 route.put("/:id", authMiddleware, isAdmin, adminController.updateUserProfile);
 route.delete("/:id", authMiddleware, isAdmin, adminController.deleteUser);
+route.patch("/:id", authMiddleware, isAdmin, adminController.toggleUserStatus);
 
 module.exports = route;

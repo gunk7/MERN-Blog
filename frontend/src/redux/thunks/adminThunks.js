@@ -43,7 +43,7 @@ export const toggleUserStatus = createAsyncThunk(
   "users/toggleStatus",
   async ({ userId, active }, { rejectWithValue }) => {
     try {
-      const response = await API.patch(`/admin/toggle-status/${userId}`, {
+      const response = await API.patch(`/admin/${userId}`, {
         active,
       });
       return { userId, newStatus: !active };

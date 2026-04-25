@@ -25,6 +25,8 @@ exports.getAllUsers = async (req, res) => {
       searchCriteria = [{ firstName: regex }, { lastName: regex }];
     } else if (searchBy === "email") {
       searchCriteria = [{ email: regex }];
+    } else if (searchBy === "username") {
+      searchCriteria = [{ username: regex }];
     } else {
       searchCriteria = [
         { firstName: regex },
@@ -179,6 +181,7 @@ exports.deleteUser = async (req, res) => {
     const targetUserId = req.params.id;
     const loggedInUser = req.user;
 
+    // Only Admins should be allowed to perform hard deletes
     if (loggedInUser.role !== "admin") {
       return res.status(403).json({
         success: false,
@@ -186,7 +189,7 @@ exports.deleteUser = async (req, res) => {
       });
     }
 
-    // Run both deletions at once
+    // Run both deletions concurrently
     const [deletedUser] = await Promise.all([
       userModel.findByIdAndDelete(targetUserId),
       userDetail.findOneAndDelete({ userId: targetUserId }),
@@ -206,9 +209,45 @@ exports.deleteUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete User Error:", error.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Something Went Wrong while Deleting the user",
+      message: "Something Went Wrong while deleting the user",
+    });
+  }
+};
+
+exports.toggleUserStatus = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    const loggedInUser = req.user;
+
+    if (loggedInUser.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Unauthorized Access. Only Admins can toggle user status.",
+      });
+    }
+
+    const user = await userModel.findById(targetUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    user.isAccountVerified = !user.isAccountVerified;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `User status updated to ${user.isAccountVerified ? "verified" : "unverified"}.`,
+    });
+  } catch (error) {
+    console.error("Toggle User Status Error:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Something Went Wrong while toggling user status",
     });
   }
 };
@@ -252,6 +291,7 @@ exports.getMyProfile = async (req, res) => {
           bio: 1,
           email: "$accountInfo.email",
           username: "$accountInfo.username",
+          createdAt: "$accountInfo.createdAt",
         },
       },
     ]);
