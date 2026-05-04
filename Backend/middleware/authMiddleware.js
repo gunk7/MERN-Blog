@@ -1,5 +1,5 @@
 const user = require("../models/userModel");
-const { verifyToken } = require("../utils/jwt");
+const { verifyAccessToken } = require("../utils/jwt");
 
 exports.authMiddleware = async (req, res, next) => {
   let token;
@@ -15,7 +15,7 @@ exports.authMiddleware = async (req, res, next) => {
 
   try {
     token = headerAuth.split(" ")[1];
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
     const currentUser = await user.findById(decoded.id).select("-password");
     req.user = currentUser;
     if (!req.user) {

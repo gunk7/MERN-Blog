@@ -1,10 +1,8 @@
-const brandAccent = "#8b5cf6";
-const brandAccentSoft = "rgba(139, 92, 246, 0.15)";
-const bgColor = "#020617"; // deeper than slate
-const cardColor = "rgba(15, 23, 42, 0.75)";
-const borderColor = "rgba(148, 163, 184, 0.15)";
-const textPrimary = "#e2e8f0";
-const textSecondary = "#94a3b8";
+const brandPrimary = "#6a5188"; // --color-primary
+const brandSurface = "#faf9ff"; // --color-surface
+const brandText = "#261e35"; // --color-on-surface
+const brandTextSecondary = "#6b637a"; // --color-on-surface-variant
+const brandBorder = "rgba(106, 81, 136, 0.1)"; // primary/10
 
 const wrapLayout = (title, content) => `
 <!DOCTYPE html>
@@ -13,199 +11,204 @@ const wrapLayout = (title, content) => `
   <meta charset="utf-8">
   <style>
     body {
-      background: radial-gradient(circle at top, #0f172a 0%, ${bgColor} 70%);
+      background-color: ${brandSurface};
       margin: 0;
-      padding: 50px 12px;
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: ${textPrimary};
+      padding: 40px 15px;
+      font-family: "Times New Roman", Times, serif;
+      color: ${brandText};
+      -webkit-font-smoothing: antialiased;
     }
 
     .wrapper {
-      max-width: 520px;
+      max-width: 500px;
       margin: 0 auto;
-      background: ${cardColor};
-      backdrop-filter: blur(14px);
-      border-radius: 20px;
-      padding: 42px 36px;
-      border: 1px solid ${borderColor};
-      box-shadow: 
-        0 10px 30px rgba(0,0,0,0.6),
-        inset 0 1px 0 rgba(255,255,255,0.04);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* subtle glow ring */
-    .wrapper::before {
-      content: "";
-      position: absolute;
-      inset: -1px;
-      background: radial-gradient(circle at 20% 0%, ${brandAccentSoft}, transparent 40%);
-      z-index: 0;
-    }
-
-    .content {
-      position: relative;
-      z-index: 1;
+      background: #ffffff;
+      border-radius: 32px;
+      padding: 48px 40px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0px 10px 30px rgba(106, 81, 136, 0.06);
     }
 
     .logo {
       text-align: center;
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 28px;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: -0.02em;
+      margin-bottom: 36px;
+      color: ${brandPrimary};
+      text-transform: lowercase;
     }
 
     .logo span {
-      color: ${brandAccent};
+      font-style: italic;
+      color: ${brandText};
     }
 
     h2 {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 700;
       text-align: center;
-      margin: 0 0 12px;
+      margin: 0 0 16px;
+      color: ${brandText};
     }
 
     p {
-      color: ${textSecondary};
+      color: ${brandTextSecondary};
       line-height: 1.6;
       text-align: center;
-      margin: 0 0 16px;
-      font-size: 14px;
+      margin: 0 0 20px;
+      font-size: 16px;
     }
 
-    /* OTP block redesign */
-    .otp-container {
+    .otp-grid {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
       margin: 32px 0;
-      padding: 18px;
-      border-radius: 14px;
-      background: linear-gradient(
-        135deg,
-        rgba(255,255,255,0.04),
-        rgba(255,255,255,0.02)
-      );
-      border: 1px dashed rgba(148,163,184,0.25);
-      text-align: center;
     }
 
-    .otp-code {
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: 12px;
-      color: #fff;
-      text-shadow: 0 0 12px ${brandAccentSoft};
+    .otp-box {
+      width: 45px;
+      height: 55px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: ${brandSurface};
+      border: 1px solid ${brandBorder};
+      border-radius: 12px;
+      font-size: 24px;
+      font-weight: bold;
+      color: ${brandPrimary};
     }
 
-    /* CTA button */
     .btn {
-      display: inline-block;
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-weight: 600;
+      display: block;
+      text-align: center;
+      padding: 16px 32px;
+      border-radius: 50px;
+      font-weight: bold;
       text-decoration: none;
-      background: ${brandAccent};
-      color: #fff !important;
-      box-shadow: 0 6px 20px rgba(139,92,246,0.35);
+      background: ${brandPrimary};
+      color: #ffffff !important;
+      margin: 30px auto;
+      max-width: 200px;
     }
 
-    .btn:hover {
-      opacity: 0.9;
+    .checkmark-circle {
+      width: 60px;
+      height: 60px;
+      background-color: #f3ebff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      color: ${brandPrimary};
+      font-size: 30px;
     }
 
     .footer {
-      margin-top: 28px;
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid ${brandSurface};
       text-align: center;
-      font-size: 12px;
-      color: ${textSecondary};
-      opacity: 0.8;
-    }
-
-    .divider {
-      height: 1px;
-      background: rgba(148,163,184,0.15);
-      margin: 24px 0;
+      font-size: 13px;
+      color: ${brandTextSecondary};
+      font-style: italic;
     }
   </style>
 </head>
 
 <body>
   <div class="wrapper">
-    <div class="content">
-      <div class="logo">BLOG<span>.OS</span></div>
-      ${content}
-      <div class="footer">
-        This is an automated secure message.<br/>
-        Do not share your code with anyone.
-      </div>
+    <div class="logo">wave<span>log</span></div>
+    ${content}
+    <div class="footer">
+      Sent securely by Wavelog Editorial Team.<br/>
+      Please do not reply to this automated email.
     </div>
   </div>
 </body>
 </html>
 `;
 
+const renderOTPBoxes = (otp) => {
+  const digits = otp.toString().split('');
+  return `
+    <div class="otp-grid">
+      ${digits.map(digit => `<div class="otp-box">${digit}</div>`).join('')}
+    </div>
+  `;
+};
+
 const emailTemplates = {
   // 1. Verification & Resend OTP
   verificationOTP: (otp) => ({
-    subject: "🔐 Your Verification Code",
+    subject: "🔐 Verify your Wavelog account",
     html: wrapLayout(
       "Verify Account",
       `
-      <h2>Security Check</h2>
-      <p>Almost there! Use the secure code below to verify your email address and unlock your profile.</p>
-      <div class="otp-container">
-        <div class="otp-code">${otp}</div>
-      </div>
-      <p style="font-size: 13px;">This code expires in 10 minutes. <br/> For security, never share this code with anyone.</p>
+      <h2>Welcome to the journal.</h2>
+      <p>Before you begin your first draft, please verify your identity using the authorization code below.</p>
+      ${renderOTPBoxes(otp)}
+      <p style="font-size: 14px;">This code is valid for 10 minutes.</p>
     `,
     ),
   }),
 
-  // 2. Welcome Email
+  // 2. Verification Success (Account Fully Activated)
+  verificationSuccess: (username) => ({
+    subject: "✅ Identity Confirmed | Wavelog",
+    html: wrapLayout(
+      "Verification Success",
+      `
+      <div class="checkmark-circle">✓</div>
+      <h2>Identity Confirmed.</h2>
+      <p>Thank you, ${username}. Your email address has been successfully verified. Your editorial space is now fully active.</p>
+      <a href="${process.env.FRONTEND_URL}/login" class="btn">Start Writing</a>
+      <p style="font-size: 14px;">You can now access your dashboard and start sharing your stories with the world.</p>
+    `,
+    ),
+  }),
+
+  // 3. Welcome Email
   welcome: (username) => ({
-    subject: "🚀 Welcome to the future of blogging!",
+    subject: "🚀 The journey begins on Wavelog",
     html: wrapLayout(
       "Welcome",
       `
-      <h2>Welcome, ${username}!</h2>
-      <p>Your account is now fully active. You've joined a community of thinkers, creators, and builders.</p>
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.FRONTEND_URL}/login" class="btn">Launch Dashboard</a>
-      </div>
-      <p>Check out the trending tags to start your first story.</p>
+      <h2>Greetings, ${username}.</h2>
+      <p>Your space is ready. Wavelog is where your stories find their rhythm and your ideas find their home.</p>
+      <a href="${process.env.FRONTEND_URL}/login" class="btn">Enter Workspace</a>
+      <p>We look forward to seeing what you create.</p>
     `,
     ),
   }),
 
-  // 3. Password Reset OTP
+  // 4. Password Reset OTP
   passwordResetOTP: (otp) => ({
-    subject: "🔑 Reset Your Password",
+    subject: "🔑 Reset your Wavelog access",
     html: wrapLayout(
       "Reset Password",
       `
-      <h2>Identity Verification</h2>
-      <p>We received a request to reset your password. Enter the code below to set a new one:</p>
-      <div class="otp-container">
-        <div class="otp-code">${otp}</div>
-      </div>
-      <p>If you didn't request this, you can safely ignore this email.</p>
+      <h2>Account Recovery</h2>
+      <p>A password reset was requested. Use the individual digits below to authorize the change:</p>
+      ${renderOTPBoxes(otp)}
+      <p>If you did not request this, please secure your account immediately.</p>
     `,
     ),
   }),
 
-  // 4. Change Password OTP
+  // 5. Change Password OTP
   changePasswordOTP: (otp) => ({
-    subject: "🛡️ Secure Password Change",
+    subject: "🛡️ Security Alert: Password Update",
     html: wrapLayout(
       "Change Password",
       `
-      <h2>Changing Password?</h2>
-      <p>Confirm your identity to update your security credentials. Use this authorization code:</p>
-      <div class="otp-container">
-        <div class="otp-code">${otp}</div>
-      </div>
-      <p style="color: #ef4444;">Warning: If this wasn't you, please change your login email immediately.</p>
+      <h2>Confirm Security Change</h2>
+      <p>To finalize your password update, please enter the following code:</p>
+      ${renderOTPBoxes(otp)}
+      <p style="color: #b91c1c;">Warning: Only enter this code if you are currently on the Wavelog settings page.</p>
     `,
     ),
   }),

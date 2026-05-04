@@ -32,7 +32,7 @@ export const editProfileSchema = Yup.object({
 });
 
 const BLOG_STATUSES = ["draft", "published", "scheduled"];
-const CATEGORIES = ["Technology", "Design", "Business", "Science", "Culture", "Health & Wellness", "Finance", "Education", "Travel", "Food & Lifestyle", "Sports", "Entertainment", "Politics", "Environment", "Personal"];
+const CATEGORIES = ["None","Technology", "Design", "Business", "Science", "Culture", "Health & Wellness", "Finance", "Education", "Travel", "Food & Lifestyle", "Sports", "Entertainment", "Politics", "Environment", "Personal"];
 
 export const blogSchema = Yup.object({
   title: Yup.string()

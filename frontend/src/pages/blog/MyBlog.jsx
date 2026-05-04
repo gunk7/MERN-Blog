@@ -121,7 +121,7 @@ const MyBlogs = () => {
                 </div>
 
                 <h3
-                  onClick={() => navigate(`/blog/${blog._id}`)}
+                  onClick={() => navigate(`/blog/id/${blog._id}`)}
                   className="text-2xl font-display font-black leading-tight text-on-surface group-hover:text-primary transition-colors cursor-pointer mb-2"
                 >
                   {blog.title}
@@ -179,7 +179,7 @@ const MyBlogs = () => {
 
               {/* Right Side: Small Image Box (Style from image_7014a5.png) */}
               <div
-                onClick={() => navigate(`/blog/${blog._id}`)}
+                onClick={() => navigate(`/blog/id/${blog._id}`)}
                 className="w-full md:w-48 h-32 shrink-0 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-primary/5"
               >
                 <img

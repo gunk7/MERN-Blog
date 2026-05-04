@@ -2,9 +2,14 @@ const UserVerify = require("../models/userVerificationModel");
 const User = require("../models/userModel");
 const { generateOTP } = require("../utils/otpGenerator");
 const emailTemplates = require("../utils/emailTemplate");
-const { mailSend } = require("../utils/mail");
-const { generateToken } = require("../utils/jwt");
 const bcrypt = require("bcryptjs");
+const { mailSend } = require("../utils/mail");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require("../utils/jwt");
+const passport = require("passport");
 
 exports.signup = async (req, res) => {
   try {
@@ -19,8 +24,8 @@ exports.signup = async (req, res) => {
 
     const condition = {
       $or: [
-        { email: email.toLowerCase() },
-        { username: username.toLowerCase() },
+        { email: email.trim().toLowerCase() },
+        { username: username.trim().toLowerCase() },
       ],
     };
 
@@ -52,8 +57,8 @@ exports.signup = async (req, res) => {
     }
     const otp = generateOTP(6);
     await UserVerify.create({
-      username: username.toLowerCase(),
-      email: email.toLowerCase(),
+      username: username.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
       password,
       otp: {
         code: otp,
@@ -64,12 +69,12 @@ exports.signup = async (req, res) => {
     });
 
     const mail = emailTemplates.verificationOTP(otp);
-     mailSend(email, mail.subject, mail.html);
+    mailSend(email, mail.subject, mail.html);
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       data: email,
-      message: "An OTP has been sent for verrficaiton. ",
+      message: "An OTP has been sent for Verification. ",
     });
   } catch (error) {
     console.error(error);
@@ -84,13 +89,11 @@ exports.signup = async (req, res) => {
 exports.verifyAndCreateUser = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    console.log(req.body);
 
     const verify = await UserVerify.findOne({
       email: email.toLowerCase(),
       "otp.type": "email_verification",
     });
-    console.log("Data from verify collection:", verify);
     if (!verify) {
       return res.status(404).json({
         success: false,
@@ -134,6 +137,10 @@ exports.verifyAndCreateUser = async (req, res) => {
       isAccountVerified: true,
     });
 
+    await UserDetail.create({
+      userId: user._id,
+    });
+
     const mail = emailTemplates.welcome(verify.username);
     await mailSend(email, mail.subject, mail.html);
 
@@ -158,81 +165,32 @@ exports.verifyAndCreateUser = async (req, res) => {
   }
 };
 
-exports.resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-    }
-    const resendCondition = {
-      email: email.toLowerCase(),
-      "otp.type": "email_verification",
-    };
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "This account is already verified. Please login.",
-      });
-    }
-
-    const pendingUser = await UserVerify.findOne(resendCondition);
-    if (!pendingUser) {
-      return res.status(404).json({
-        success: false,
-        message: "No registration in progress. Please sign up first.",
-      });
-    }
-
-    const newOtp = generateOTP(6);
-    pendingUser.otp.code = newOtp;
-    pendingUser.otp.type = "email_verification";
-    pendingUser.otp.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    pendingUser.otp.attempts = 0;
-
-    await pendingUser.save();
-console.log(pendingUser)
-    const mail = emailTemplates.verificationOTP(newOtp);
-    await mailSend(email, mail.subject, mail.html);
-
-    return res.status(200).json({
-      success: true,
-      message: "A new OTP has been sent to your email.",
-    });
-  } catch (error) {
-    console.error("Resend OTP Error:", error);
-    res.status(500).json({
-      success: false,
-      data: false,
-      message: "Internal Server Error",
-    });
-  }
-};
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const normalizedEmail = email?.toLowerCase();
 
+    // 1. Basic validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: "Invalid Credentials",
       });
     }
-
+    const normalizedEmail = email.trim().toLowerCase();
+    // 2. Look for the user in the main collection
     const user = await User.findOne({ email: normalizedEmail });
 
+    // Scenario: User doesn't exist in main table
     if (!user) {
-      const isInVerifyTable = await UserVerify.findOne({ email: normalizedEmail });
-      
+      const isInVerifyTable = await UserVerify.findOne({
+        email: normalizedEmail,
+      });
+
       if (isInVerifyTable) {
         return res.status(403).json({
           success: false,
-          message: "Account not verified. Please check your email to complete signup.",
+          message:
+            "Account not verified. Please check your email to complete signup.",
         });
       }
 
@@ -241,44 +199,137 @@ exports.login = async (req, res) => {
         message: "Invalid Credentials",
       });
     }
-
+    //3/ Block Google accounts from local login
+    if (user.authProvider !== "local") {
+      return res.status(401).json({
+        success: false,
+        data: false,
+        message: "This Account uses Google sign-in. Please Login with Google",
+      });
+    }
+    // 4. Scenario: User exists but is NOT verified
     if (!user.isAccountVerified) {
-      const pendingVerification = await UserVerify.findOne({ email: normalizedEmail });
+      const pendingVerification = await UserVerify.findOne({
+        email: normalizedEmail,
+      });
 
       if (pendingVerification) {
         return res.status(403).json({
           success: false,
-          message: "Email not verified. Please verify your email before logging in.",
+          data: false,
+          message:
+            "Email not verified. Please verify your email before logging in.",
         });
       } else {
+        const newOtp = generateOTP(6);
+
+        await UserVerify.create({
+          email: normalizedEmail,
+          username: user.username,
+          password: user.password,
+          otp: {
+            code: newOtp,
+            type: "email_verification",
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+            attempts: 0,
+          },
+        });
+
+        // Send Wavelog Editorial Template
+        const mail = emailTemplates.verificationOTP(newOtp);
+        mailSend(normalizedEmail, mail.subject, mail.html);
+
         return res.status(403).json({
           success: false,
-          message: "Verification record expired. Please register again.",
+          data: false,
+          message:
+            "Verification record expired. A new secure code has been sent to your email.",
         });
       }
     }
 
+    // 4. Standard Password Match
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
+        data: false,
         message: "Invalid Credentials",
       });
     }
 
-    const token = generateToken(user);
+    //5. Generate Tokens
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    const deviceInfo = req.headers["user-agent"] || "Unknown Device";
+    const ipAddress = req.ip;
+
+    await user.addRefreshToken(refreshToken, deviceInfo, ipAddress);
+
+    // 6. Success
     res.status(200).json({
       success: true,
-      data: { token, user },
+      data: { accessToken, refreshToken, user },
       message: "Login Successful",
     });
-
   } catch (error) {
-    console.error("Login Error:", error.message);
+    console.error("Wavelog Login Error:", error.message);
     res.status(500).json({
       success: false,
+      data: false,
       message: "Login Unsuccessful",
     });
+  }
+};
+
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+
+    // Ensure they aren't already verified
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser?.isAccountVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "This account is already verified. Please login.",
+      });
+    }
+
+    const newOtp = generateOTP(6);
+
+    // Update or Create the verification record
+    const pendingUser = await UserVerify.findOneAndUpdate(
+      { email: normalizedEmail },
+      {
+        otp: {
+          code: newOtp,
+          type: "email_verification",
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          attempts: 0,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    // Send the Editorial Template
+    const mail = emailTemplates.verificationOTP(newOtp);
+    await mailSend(normalizedEmail, mail.subject, mail.html);
+
+    return res.status(200).json({
+      success: true,
+      message: "A new secure code has been sent to your email.",
+    });
+  } catch (error) {
+    console.error("Resend OTP Error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
 
@@ -333,7 +384,7 @@ exports.forgotPassword = async (req, res) => {
       message: "If email exists, OTP will be sent",
     });
   } catch (error) {
-    console.log("Forgot Password error:", error.message);
+    console.error("Forgot Password error:", error.message);
     res.status(500).json({
       success: false,
       data: false,
@@ -473,9 +524,7 @@ exports.changePasswordReq = async (req, res) => {
 
 exports.changePassword = async (req, res) => {
   try {
-    console.log(req.body);
     const userId = req.user._id;
-    console.log(userId);
     const { otp, oldPassword, newPassword, confirmPassword } = req.body;
 
     const user = await User.findById(userId);
@@ -512,18 +561,13 @@ exports.changePassword = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Incorrect current password" });
     }
-    // Add these logs to debug
-    console.log("Looking for email:", email.toLowerCase());
-    console.log("Looking for type: change_password");
 
     // Temporarily try searching ONLY by email to see if the document exists at all
     const allVerifyDocs = await UserVerify.find({ email: email.toLowerCase() });
-    console.log("All OTP docs for this email:", allVerifyDocs);
     const verify = await UserVerify.findOne({
       email: email.toLowerCase(),
       "otp.type": "change_password",
     });
-    console.log(verify);
 
     if (!verify) {
       return res
@@ -572,4 +616,166 @@ exports.changePassword = async (req, res) => {
       message: "Internal Server Error",
     });
   }
+};
+
+exports.refresh = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        data: false,
+        message: "Invalid Token",
+      });
+    }
+
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (error) {
+      console.error("error in refreh token", error.message);
+      return res.status(401).json({
+        success: false,
+        data: false,
+        message: "Refresh token expired or invalid. Please login again.",
+      });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        data: false,
+        message: "User no longer exists",
+      });
+    }
+    if (!user.hasRefreshToken(refreshToken)) {
+      return res.status(401).json({
+        success: false,
+        message: "Session revoked. Please login again.",
+      });
+    }
+
+    // 4. Rotate — remove old, issue new
+    await user.removeRefreshToken(refreshToken);
+
+    const newRefreshToken = generateRefreshToken(user);
+    const newAccessToken = generateAccessToken(user);
+
+    const deviceInfo = req.headers["user-agent"] || "Unknown Device";
+    const ipAddress = req.ip;
+
+    await user.addRefreshToken(newRefreshToken, deviceInfo, ipAddress);
+
+    // 5. Send both back
+    res.status(200).json({
+      success: true,
+      data: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+      message: "Token refreshed",
+    });
+  } catch (error) {
+    console.error("refresh token Error: ", error.message);
+
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: "Could not refresh token",
+    });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const { refreshToken, allDevices } = req.body;
+
+    if (!allDevices && !refreshToken) {
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: "No refresh token provided",
+      });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        data: false,
+        message: "User not found",
+      });
+    }
+
+    if (allDevices) {
+      await user.removeAllRefreshTokens();
+    } else {
+      await user.removeRefreshToken(refreshToken);
+    }
+    res.status(200).json({
+      success: true,
+      message: allDevices
+        ? "Logged out from all devices"
+        : "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout Error: ", error.message);
+
+    return res.status(500).json({
+      success: false,
+      data: fasle,
+      message: error.message || "Logout failed",
+    });
+  }
+};
+
+// Step 1 — redirect to Google
+exports.googleAuth = passport.authenticate("google", {
+  scope: ["profile", "email"],
+});
+
+// Step 2 — Google redirects back here
+
+exports.googleCallback = (req, res, next) => {
+  console.log("Google callback hit");
+  passport.authenticate(
+    "google",
+    {
+      session: false,
+      failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed`,
+    },
+    async (error, user) => {
+      try {
+        if (error || !user) {
+          console.log("No user or error:", error);
+          return res.redirect(
+            `${process.env.CLIENT_URL}/login?error=google_failed`,
+          );
+        }
+        console.log("user found:", user._id);
+
+        const accessToken = generateAccessToken(user);
+        console.log("accessToken generated");
+
+        const refreshToken = generateRefreshToken(user);
+        console.log("refreshToken generated");
+
+        const deviceInfo = req.headers["user-agent"] || "Unknown Device";
+        const ipAddress = req.ip;
+
+        await user.addRefreshToken(refreshToken, deviceInfo, ipAddress);
+        console.log("refresh token saved");
+
+        // Redirect to frontend with both tokens in query params
+        res.redirect(
+          `${process.env.CLIENT_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`,
+        );
+      } catch (error) {
+        console.error("Wavelog Google Callback Error:", error.message);
+        res.redirect(`${process.env.CLIENT_URL}/login?error=server_error`);
+      }
+    },
+  )(req, res, next);
 };

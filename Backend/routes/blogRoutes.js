@@ -27,12 +27,12 @@ route.post(
   blogController.createBlog,
 );
 
+route.get("/slug/:slug", authMiddleware, blogController.getBlogBySlug);
 route.get("/my-blogs", authMiddleware, blogController.getMyBlogs);
 
 route.get("/", blogController.getAllBlogs);
 
-route.get("/:id", blogController.getBlogById);
-route.get("/:slug", blogController.getBlogBySlug);
+route.get("/id/:id", blogController.getBlogById);
 route.get("/user/:userId", blogController.getBlogsByUser);
 
 route.put(
@@ -50,6 +50,8 @@ route.put(
 
   blogController.updateBlog,
 );
+
+route.post("/like/:id", authMiddleware, blogController.toggleLikeBlog);
 
 route.delete("/:id", authMiddleware, blogController.deleteBlog);
 

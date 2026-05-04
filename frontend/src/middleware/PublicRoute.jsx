@@ -1,6 +1,9 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { isLoggedIn, selectCurrentUser } from "../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectCurrentUser,
+} from "../redux/selectors/authSelectors";
 import { Navigate, Outlet } from "react-router-dom";
 
 const PublicRoute = () => {
@@ -8,9 +11,6 @@ const PublicRoute = () => {
   const user = useSelector(selectCurrentUser);
 
   if (loggedIn) {
-    if (user?.role === "admin") {
-      return <Navigate to="/dashboard" replace />;
-    }
     return <Navigate to="/profile" replace />;
   }
 

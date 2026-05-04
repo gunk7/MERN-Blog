@@ -1,19 +1,19 @@
 import React, { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getBlogById } from "../../redux/thunks/blogThunks";
-
+import { getBlogById, getBlogBySlug } from "../../redux/thunks/blogThunks";
+import CommentsSection from "../../components/CommentsSection";
+import LikeButton from "../../components/LikeButton";
 const BlogDetail = () => {
-  const { id } = useParams();
+  const { slug, id } = useParams();
   const dispatch = useDispatch();
 
   const { currentBlog, loading, error } = useSelector((state) => state.blog);
 
   useEffect(() => {
-    if (id) {
-      dispatch(getBlogById(id));
-    }
-  }, [dispatch, id]);
+    if (id) dispatch(getBlogById(id));
+    else if (slug) dispatch(getBlogBySlug(slug));
+  }, [dispatch, slug, id]);
 
   const getReadingTime = (content) => {
     const words = content?.replace(/<[^>]*>/g, "").split(/\s+/).length || 0;
@@ -99,28 +99,33 @@ const BlogDetail = () => {
 
           <div className="flex flex-wrap items-center gap-8 py-8 border-y border-surface-highest text-on-surface-variant">
             <div className="flex items-center gap-4">
-              <img
-                src={
-                  currentBlog.author?.profile?.profilePic
-                    ? `${import.meta.env.VITE_API_IMG_URL}/${currentBlog.author.profile.profilePic}`
-                    : "https://ui-avatars.com/api/?name=" +
-                      (currentBlog.author?.profile?.firstName || "A") +
-                      "&background=random&color=fff"
-                }
-                className="w-12 h-12 rounded-full object-cover grayscale-[0.5] hover:grayscale-0 transition-all border border-primary/20"
-                alt="Author"
-                onError={(e) => {
-                  e.target.src =
-                    "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
-                }}
-              />
-              <div className="flex flex-col">
-                <span className="font-bold text-on-surface tracking-tight">
-                  {currentBlog.author?.profile?.firstName}{" "}
-                  {currentBlog.author?.profile?.lastName}
-                </span>
-                <span className="text-xs italic">Author</span>
-              </div>
+              <Link
+                to={`/userProfile/${currentBlog.author?.username}`}
+                className="flex items-center gap-4 group"
+              >
+                <img
+                  src={
+                    currentBlog.author?.profile?.profilePic
+                      ? `${import.meta.env.VITE_API_IMG_URL}/${currentBlog.author.profile.profilePic}`
+                      : "https://ui-avatars.com/api/?name=" +
+                        (currentBlog.author?.profile?.firstName || "A") +
+                        "&background=random&color=fff"
+                  }
+                  className="w-12 h-12 rounded-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all border border-primary/20"
+                  alt="Author"
+                  onError={(e) => {
+                    e.target.src =
+                      "https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y";
+                  }}
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-on-surface tracking-tight group-hover:text-primary transition-colors">
+                    {currentBlog.author?.profile?.firstName}{" "}
+                    {currentBlog.author?.profile?.lastName}
+                  </span>
+                  <span className="text-xs italic">Author</span>
+                </div>
+              </Link>
             </div>
 
             <div className="hidden md:block h-8 w-px bg-surface-highest" />
@@ -202,17 +207,18 @@ const BlogDetail = () => {
                   Views
                 </p>
               </div>
-              <div className="group cursor-pointer text-center border-l border-surface-highest pl-10">
-                <p className="text-4xl font-display font-black text-primary group-hover:scale-110 transition-transform">
-                  {currentBlog.likesCount || 0}
-                </p>
-                <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-on-surface-variant">
-                  Likes
-                </p>
+              <div className="border-l border-surface-highest pl-10">
+                <LikeButton
+                  postId={currentBlog._id}
+                  initialCount={currentBlog.likesCount || 0}
+                  initialLiked={currentBlog.isLiked || false}
+                />
               </div>
             </div>
           </div>
         </footer>
+
+        <CommentsSection postId={currentBlog._id} />
       </main>
     </div>
   );

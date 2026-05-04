@@ -13,6 +13,7 @@ import {
 } from "../redux/selectors/authSelectors";
 import OtpModal from "../modals/OtpModal";
 import ForgotPassword from "../modals/ForgotPassword";
+import GoogleButton from "../components/GoogleButton";
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -51,12 +52,12 @@ const Login = () => {
           navigate("/profile");
         }
       } catch (err) {
+        const message = err?.message || err || "";
+
         const isUnverified =
-          err ===
-            "Email not verified. Please verify your email before logging in." ||
-          err === "Verification record expired. Please register again" ||
-          err ===
-            "Account not verified. Please check your email to complete signup.";
+          message.toLowerCase().includes("not verified") ||
+          message.toLowerCase().includes("verification") ||
+          message.toLowerCase().includes("expired");
 
         if (isUnverified) {
           setUnverifiedEmail(data.email);
@@ -64,10 +65,10 @@ const Login = () => {
           setOpenOtpModal(true);
 
           toast.info(
-            "Verification Required: Please enter the code sent to your email.",
+            "Verification Required: Enter the OTP sent to your email.",
           );
         } else {
-          toast.error(err || "Something went wrong");
+          toast.error(message || "Something went wrong");
         }
       }
     },
@@ -159,6 +160,15 @@ const Login = () => {
                 </>
               )}
             </button>
+            <div className="flex items-center gap-3 my-6 sm:my-8">
+              <hr className="flex-1 border-on-surface/10" />
+              <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">
+                or
+              </span>
+              <hr className="flex-1 border-on-surface/10" />
+            </div>
+
+            <GoogleButton/>
           </fieldset>
         </form>
 

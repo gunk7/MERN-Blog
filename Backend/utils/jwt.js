@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const generateToken = (user) => {
+const generateAccessToken = (user) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
@@ -10,15 +10,34 @@ const generateToken = (user) => {
       id: user._id,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" },
+    { expiresIn: "15m" },
   );
 };
 
-const verifyToken = (token) => {
+const generateRefreshToken = (user) => {
+  if (!process.env.JWT_REFRESH_SECRET) {
+    throw new Error(
+      "JWT_REFRESH_SECRET is not defined in environment variables",
+    );
+  }
+
+  return jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: "30d",
+  });
+};
+
+const verifyAccessToken = (token) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined");
   }
   return jwt.verify(token, process.env.JWT_SECRET);
+};
+
+const verifyRefreshToken = (token) => {
+  if (!process.env.JWT_REFRESH_SECRET) {
+    throw new Error("JWT_REFRESH_SECRET is not defined");
+  }
+  return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 };
 
 /* const tokenOtpType = (user, type) => {
@@ -50,6 +69,8 @@ const verifyOtpToken = (token, expectedType) => {
   return decoded; 
 }; */
 module.exports = {
-  generateToken,
-  verifyToken,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
 };

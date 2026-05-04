@@ -43,4 +43,5 @@ const uploadBlogFiles = uploadImage.fields([
 ]);
 
 const uploadSingleImage = uploadImage.single("profilePic");
+
 module.exports = { uploadBlogFiles, uploadSingleImage };

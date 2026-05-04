@@ -4,6 +4,7 @@ const { generateUniqueSlug } = require("../utils/slugGeneration");
 
 const BLOG_STATUSES = ["draft", "published", "scheduled"];
 const CATEGORIES = [
+  "None",
   "Technology",
   "Design",
   "Business",
@@ -60,13 +61,24 @@ const blogSchema = new mongoose.Schema(
     scheduledFor: { type: Date },
 
     viewsCount: { type: Number, default: 0, min: 0 },
+    viewedBy: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+      },
+    ],
+    likedBy: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
     likesCount: { type: Number, default: 0, min: 0 },
     commentsCount: { type: Number, default: 0, min: 0 },
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   },
 );
 
@@ -90,10 +102,25 @@ blogSchema.virtual("isDeleted").get(function () {
   return this.deletedAt !== null;
 });
 
+blogSchema.pre("validate", async function () {
+  // Generate slug on new blog creation
+  if (!this._id) {
+    this._id = new mongoose.Types.ObjectId();
+  }
+  // Slug Generation Logic
+  // Only generate if it's a new doc OR the title changed while still a draft
+  if (this.isNew || (this.isModified("title") && this.status === "draft")) {
+    this.slug = await generateUniqueSlug(this.title, this._id);
+  }
+
+  // Scheduling Enforcement
+  if (this.status === "scheduled" && !this.scheduledFor) {
+    throw new Error("A 'scheduledFor' date is required for scheduled posts.");
+  }
+});
+
 //  Pre-save hook
 blogSchema.pre("save", async function () {
-
- 
   // Auto-stamp publishedAt when status flips to published
   if (this.isModified("status")) {
     if (this.status === "published" && !this.publishedAt) {
@@ -103,16 +130,6 @@ blogSchema.pre("save", async function () {
     if (this.status !== "scheduled") {
       this.scheduledFor = null;
     }
-  }
-});
-
-blogSchema.pre("validate", async function () {
-  // Generate slug on new blog creation
-  if (!this.slug) {
-    if (!this._id) {
-      this._id = new mongoose.Types.ObjectId();
-    }
-    this.slug = generateUniqueSlug(this.title, this._id);
   }
 });
 

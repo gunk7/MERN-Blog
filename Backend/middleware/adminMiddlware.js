@@ -2,7 +2,6 @@ const User = require("../models/userModel");
 
 exports.isAdmin = (req, res, next) => {
   try {
-    console.log(req.user);
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({
         success: false,

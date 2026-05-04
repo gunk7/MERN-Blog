@@ -6,10 +6,10 @@ export const login = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/login", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
-      return rejectWithValue(err.response.data.message || "Login Failed");
+      return rejectWithValue(err?.response?.data?.message || "Login Failed");
     }
   },
 );
@@ -19,10 +19,10 @@ export const signup = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/signup", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
-      return rejectWithValue(err.response.data.message || "Signup Failed");
+      return rejectWithValue(err?.response?.data?.message|| "Signup Failed");
     }
   },
 );
@@ -32,7 +32,7 @@ export const verifyOtp = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/verify", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(
@@ -47,7 +47,7 @@ export const resendOtp = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/resendOtp", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(err.response.data.message || "Otp Resend Failed");
@@ -60,7 +60,7 @@ export const changePasswordReq = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/change_password_request", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(err.response.data.message || "Otp Resend Failed");
@@ -73,7 +73,7 @@ export const changePassword = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/change_password", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(
@@ -88,7 +88,7 @@ export const forgotPassword = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/forgot_password", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(
@@ -103,7 +103,7 @@ export const resetPassword = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/reset_password", values);
-      const inputdata = res?.data?.data || [];
+      const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
       return rejectWithValue(

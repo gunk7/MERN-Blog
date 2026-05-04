@@ -5,17 +5,27 @@ const connectDB = require("./config/database");
 const path = require("path");
 const PORT = process.env.PORT;
 const cors = require("cors");
-app.use(cors());
 const allRoutes = require("./routes/routes");
-
-const {blogScheduler }= require("./services/cronService");
+const { blogScheduler } = require("./services/cronService");
+const session = require("express-session");
+const passport = require("./config/passport");
 
 connectDB();
-
 blogScheduler();
 
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// ✅ session BEFORE passport
+app.use(session({
+  secret: process.env.JWT_SECRET,
+  resave: false,
+  saveUninitialized: false,
+}));
+
+app.use(passport.initialize());
+app.use(passport.session()); // ← add this
 
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

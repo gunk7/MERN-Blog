@@ -65,7 +65,11 @@ const MyProfile = () => {
           <div className="flex flex-col md:flex-row items-center gap-8">
             <div className="relative">
               <img
-                src={ "src/assets/image.png"}
+                src={
+                  userDetail?.profilePic
+                    ? `${import.meta.env.VITE_API_IMG_URL}/${userDetail.profilePic}`
+                    : "/src/assets/image.png"
+                }
                 alt="Profile"
                 className="w-40 h-40 md:w-48 md:h-48 rounded-[3.5rem] object-cover shadow-xl border-4 border-white"
               />

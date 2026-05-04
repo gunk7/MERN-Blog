@@ -28,14 +28,15 @@ import {
   toggleUserStatus,
 } from "../../redux/thunks/adminThunks";
 import { confirmAction } from "../../services/modalServices";
-
-const Dashboard = () => {
+import axios from "axios";
+const UserManagement = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const token = useSelector(isLoggedIn);
   const currentUser = useSelector(selectCurrentUser);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [countries, setCountries] = useState([]);
 
   const {
     users = [],
@@ -75,6 +76,32 @@ const Dashboard = () => {
     }
   }, [dispatch, token, filters, page, limit]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const getCountries = async () => {
+      try {
+        const { data } = await axios.get(
+          "https://restcountries.com/v3.1/all?fields=name",
+        );
+
+        const sortedNames = data
+          .map((c) => c.name.common)
+          .sort((a, b) => a.localeCompare(b));
+
+        if (mounted) setCountries(sortedNames);
+      } catch (error) {
+        console.error("Error fetching countries:", error);
+      }
+    };
+
+    if (!countries.length) getCountries();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleClearFilters = () => {
     setSearchTerm("");
     dispatch(clearFilters());
@@ -102,7 +129,7 @@ const Dashboard = () => {
           .then(() => toast.success(`User status updated`))
           .catch((err) => toast.error(err || "Update failed"));
         dispatch(fetchAllUsers());
-        navigate("/dashboard");
+        navigate("/users");
       }
     },
     [dispatch],
@@ -142,27 +169,37 @@ const Dashboard = () => {
           .unwrap()
           .then(() => toast.success("User deleted successfully"))
           .catch((err) => toast.error(err || "Failed to remove user"));
-        navigate("/dashboard");
+        navigate("/users");
       }
     },
     [currentUser, dispatch],
   );
 
   const imgUrl = import.meta.env.VITE_API_IMG_URL;
-
+  const defaultAvatar = `${imgUrl}
+            /uploads/images/profilePics/blank.jpg`;
   const columns = useMemo(
     () => [
       {
         id: "avatar",
-        header: "Photo",
+        header: "Profile Photo",
         cell: ({ row }) => (
-          <div className="flex items-center justify-center">
+          <div
+            className="flex items-center justify-center"
+            onClick={() => {
+              navigate(`/users/profile/${row.original.username}`);
+            }}
+          >
             <img
               src={
                 row.original.profilePic
                   ? `${imgUrl}/${row.original.profilePic}`
-                  : "src/assets/image.png"
+                  : (defaultAvatar ||"/src/assets/image.png")
               }
+              onError={(e) => {
+                e.target.onerror = null; // prevents infinite loop
+                e.target.src = defaultAvatar ||"/src/assets/image.png" ;
+              }}
               alt="Profile"
               className="w-9 h-9 rounded-full border border-primary/10 object-contain p-0.5 bg-surface-low"
             />
@@ -274,7 +311,7 @@ const Dashboard = () => {
         ),
       },
     ],
-    [imgUrl, handleToggleVerify, handleDelete, handleEdit],
+    [imgUrl, navigate, handleToggleVerify, handleDelete, handleEdit],
   );
 
   const table = useReactTable({
@@ -305,7 +342,7 @@ const Dashboard = () => {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-display text-on-surface leading-tight">
-            Admin Dashboard
+            User Dashboard
           </h1>
         </div>
         <div className="text-right">
@@ -353,11 +390,11 @@ const Dashboard = () => {
                 {key === "country" && (
                   <>
                     <option value="">All Countries</option>
-                    <option value="India">India</option>
-                    <option value="USA">USA</option>
-                    <option value="Russia">Russia</option>
-                    <option value="Italy">Italy</option>
-                    <option value="Canada">Canada</option>
+                    {countries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
                   </>
                 )}
                 {key === "gender" && (
@@ -450,7 +487,7 @@ const Dashboard = () => {
               value={limit}
               onChange={(e) => dispatch(setLimit(Number(e.target.value)))}
             >
-              {[5, 10, 20].map((s) => (
+              {[10, 15, 20].map((s) => (
                 <option key={s} value={s}>
                   Show {s}
                 </option>
@@ -492,4 +529,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default UserManagement;

@@ -1,5 +1,3 @@
-const { model } = require("mongoose");
-
 const aggregatePaginate = async (model, pipeline, queryParams) => {
   const page = parseInt(queryParams.page) || 1;
   const limit = parseInt(queryParams.limit) || 5;

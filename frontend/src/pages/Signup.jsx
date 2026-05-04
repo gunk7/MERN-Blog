@@ -3,9 +3,10 @@ import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import { Mail, Lock, User, UserPlus } from "lucide-react";
+import { Mail, Lock, User } from "lucide-react";
 import { signupSchema } from "../validation/schemasValidation";
-import { signup } from "../redux/thunks/authThunks";
+import { signup } from "../redux/thunks/authThunks"; // ✅ import cancelVerification
+import { cancelVerification } from "../redux/slice/authSlice";
 import {
   isLoggedIn,
   selectAuthLoading,
@@ -13,6 +14,8 @@ import {
   selectTempEmail,
 } from "../redux/selectors/authSelectors";
 import OtpModal from "../modals/OtpModal";
+import { isUsernameUnsuitable } from "../services/apiService";
+import GoogleButton from "../components/GoogleButton";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -22,9 +25,7 @@ const Signup = () => {
   const isVerifying = useSelector(selectIsVerifying);
   const tempEmail = useSelector(selectTempEmail);
 
-  const [openOtpModal, setOpenOtpModal] = useState("");
-  const [signUpData, setSignUpData] = useState({ email: "" });
-  const [showModal, setShowModal] = useState(true);
+  const [showModal, setShowModal] = useState(false); // ✅ start as false
 
   useEffect(() => {
     if (access) navigate("/dashboard");
@@ -33,6 +34,8 @@ const Signup = () => {
   useEffect(() => {
     if (isVerifying) {
       setShowModal(true);
+    } else {
+      setShowModal(false);
     }
   }, [isVerifying]);
 
@@ -41,6 +44,15 @@ const Signup = () => {
     validationSchema: signupSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
+        // Start checking
+        const isBad = await isUsernameUnsuitable(values.username);
+
+        if (isBad) {
+          //  Halt if unsuitable
+          return toast.error(
+            "This username contains unsuitable language. Please choose another.",
+          );
+        }
         await dispatch(signup(values)).unwrap();
         toast.success("Signup Successfully! Please verify your email.");
         resetForm();
@@ -49,6 +61,11 @@ const Signup = () => {
       }
     },
   });
+
+  const handleCancelVerification = () => {
+    setShowModal(false);
+    dispatch(cancelVerification()); // ✅ resets isVerifying in redux too
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-4 sm:p-6 font-body antialiased text-on-surface">
@@ -91,12 +108,12 @@ const Signup = () => {
                   className={`input-editorial ${formik.touched.email && formik.errors.email ? "border-rose-500" : ""}`}
                   {...formik.getFieldProps("email")}
                 />
+                {formik.touched.email && formik.errors.email && (
+                  <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider px-1">
+                    {formik.errors.email}
+                  </span>
+                )}
               </div>
-              {formik.touched.email && formik.errors.email && (
-                <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider px-1">
-                  {formik.errors.email}
-                </span>
-              )}
 
               {/* Password */}
               <div className="flex flex-col gap-2">
@@ -126,7 +143,7 @@ const Signup = () => {
             </fieldset>
           </form>
         ) : (
-          /* This UI shows if they refresh the page. It gives them a way to go back if they made a mistake. */
+          /* Shown on page refresh — lets user re-open modal or restart */
           <div className="py-6 text-center animate-in fade-in zoom-in duration-300">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="text-primary" size={32} />
@@ -138,14 +155,14 @@ const Signup = () => {
 
             <div className="flex flex-col gap-4">
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => setShowModal(true)} // ✅ re-opens the modal
                 className="btn-editorial w-full"
               >
                 Enter Code
               </button>
 
               <button
-                onClick={() => dispatch(cancelVerification())}
+                onClick={handleCancelVerification} // ✅ fixed: was calling non-imported fn
                 className="text-xs font-bold text-rose-500 uppercase tracking-widest hover:underline"
               >
                 Restart with different email
@@ -154,38 +171,18 @@ const Signup = () => {
           </div>
         )}
 
-        {/* Divider - "Or continue with" */}
-        {/* <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-on-surface/10"></span>
-          </div>
-          <div className="relative flex justify-center text-[10px] uppercase tracking-widest font-bold">
-            <span className="bg-white px-4 text-on-surface-variant">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        {/* Social Buttons - Kept within your Design System style */}
-        {/* <div className="grid grid-cols-2 gap-4">
-          <button className="flex items-center justify-center gap-2 bg-surface-low border border-primary/5 py-2.5 rounded-xl hover:bg-primary/5 transition-colors font-bold text-xs uppercase tracking-wider">
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              className="w-4 h-4"
-              alt="Google"
-            />
-            Google
-          </button>
-          <button className="flex items-center justify-center gap-2 bg-surface-low border border-primary/5 py-2.5 rounded-xl hover:bg-primary/5 transition-colors font-bold text-xs uppercase tracking-wider">
-            <img
-              src="https://www.svgrepo.com/show/512317/github-142.svg"
-              className="w-4 h-4"
-              alt="Github"
-            />
-            GitHub
-          </button>
-        </div> */}
-
+        {!isVerifying && (
+          <>
+            <div className="flex items-center gap-3 my-8">
+              <hr className="flex-1 border-on-surface/10" />
+              <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">
+                or
+              </span>
+              <hr className="flex-1 border-on-surface/10" />
+            </div>
+            <GoogleButton />
+          </>
+        )}
         <hr className="my-8 border-on-surface/10" />
 
         <div className="text-center">
@@ -198,15 +195,17 @@ const Signup = () => {
               Login to your account
             </Link>
           </p>
-          {isVerifying && (
-            <OtpModal
-              email={tempEmail}
-              shouldAutoSend={false}
-              onClose={() => setShowModal(false)}
-            />
-          )}
         </div>
       </div>
+
+      {/* ✅ Modal lives OUTSIDE the conditional, controlled purely by showModal */}
+      {isVerifying && showModal && (
+        <OtpModal
+          email={tempEmail}
+          shouldAutoSend={false}
+          onClose={() => setShowModal(false)} // ✅ closes modal but keeps isVerifying state
+        />
+      )}
     </div>
   );
 };

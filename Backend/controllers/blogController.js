@@ -1,5 +1,6 @@
 const { fstat } = require("fs");
 const { Blog } = require("../models/blogModel");
+const userModel = require("../models/userModel");
 const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");
@@ -69,7 +70,7 @@ exports.createBlog = async (req, res) => {
   }
 };
 
-exports.getAllBlogs = async (req, res) => {
+/* exports.getAllBlogs = async (req, res) => {
   try {
     const blogs = await Blog.aggregate([
       { $match: { status: "published" } },
@@ -111,6 +112,8 @@ exports.getAllBlogs = async (req, res) => {
           viewsCount: 1,
           createdAt: 1,
           slug: 1,
+          likesCount: 1,
+          commentsCount: 1,
           "author.username": 1,
           "author.profile.firstName": 1,
           "author.profile.lastName": 1,
@@ -131,22 +134,25 @@ exports.getAllBlogs = async (req, res) => {
       message: "Internal server error",
     });
   }
-};
+}; */
 
 /* exports.getAllBlogs = async (req, res) => {
   try {
     const { search, category, page, limit } = req.query;
 
     // 1. Build the dynamic match object
-    const matchQuery = { status: "published" };
+    const matchQuery = { status: "published", deletedAt: null };
 
     // Search by Title (case-insensitive)
-    if (search) {
-      matchQuery.title = { $regex: search, $options: "i" };
+    if (search && search.trim()) {
+      matchQuery.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
     }
 
     // Filter by Category
-    if (category) {
+    if (category && category !== "All") {
       matchQuery.category = category;
     }
 
@@ -178,6 +184,7 @@ exports.getAllBlogs = async (req, res) => {
       },
       {
         $project: {
+          slug: 1,
           title: 1,
           content: 1,
           description: 1,
@@ -193,21 +200,134 @@ exports.getAllBlogs = async (req, res) => {
         },
       },
     ];
-    const result = await aggregatePaginate(Blog, pipeline, { page, limit });
+
+    const { data, pagination } = await aggregatePaginate(Blog, pipeline, {
+      page,
+      limit,
+    });
 
     res.status(200).json({
       success: true,
       message: "Blogs fetched successfully",
-      data: { blogs },
+      blogs: data,
+      pagination: {
+        totalBlogs: pagination.totalItems,
+        totalPages: pagination.totalPages,
+        currentPage: pagination.currentPage,
+        hasNextPage: pagination.hasNextPage,
+        hasPrevPage: pagination.hasPrevPage,
+      },
     });
   } catch (error) {
-    console.error("Error fetching blogs with aggregate:", error);
+    console.error("Error fetching blogs :", error);
     return res.status(500).json({
       success: false,
+      data: null,
       message: "Internal server error",
     });
   }
-}; */
+};
+ */
+
+exports.getAllBlogs = async (req, res) => {
+  try {
+    const { search, category, page, limit } = req.query;
+
+    const matchCriteria = { status: "published", deletedAt: null };
+
+    if (search && search.trim()) {
+      matchCriteria.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (category && category !== "ALL") {
+      const categories = category
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+      if (categories.length === 1) {
+        matchCriteria.category = categories[0];
+      } else if (categories.length > 1) {
+        matchCriteria.category = { $in: categories };
+      }
+    }
+
+    const pipeline = [
+      { $match: matchCriteria },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+
+      { $unwind: "$author" },
+      {
+        $lookup: {
+          from: "userdetails",
+          localField: "author._id",
+          foreignField: "userId",
+          as: "author.profile",
+        },
+      },
+
+      {
+        $unwind: {
+          path: "$author.profile",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          slug: 1,
+          title: 1,
+          content: 1,
+          description: 1,
+          category: 1,
+          status: 1,
+          coverImage: 1,
+          viewsCount: 1,
+          createdAt: 1,
+          "author.username": 1,
+          "author.profile.firstName": 1,
+          "author.profile.lastName": 1,
+          "author.profile.profilePic": 1,
+        },
+      },
+    ];
+
+    const { data, pagination } = await aggregatePaginate(Blog, pipeline, {
+      page,
+      limit,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Blogs fetched successfully",
+      blogs: data,
+      pagination: {
+        totalBlogs: pagination.totalItems,
+        totalPages: pagination.totalPages,
+        currentPage: pagination.currentPage,
+        hasNextPage: pagination.hasNextPage,
+        hasPrevPage: pagination.hasPrevPage,
+      },
+    });
+  } catch (error) {
+    console.error("Error in fetching all blogs:", error.message);
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: error.message || "Error in fetchiing Blogs",
+    });
+  }
+};
 
 exports.getBlogById = async (req, res) => {
   try {
@@ -220,6 +340,11 @@ exports.getBlogById = async (req, res) => {
         data: null,
       });
     }
+
+    await Blog.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      { $inc: { viewsCount: 1 } },
+    );
 
     const blog = await Blog.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(id) } },
@@ -261,6 +386,8 @@ exports.getBlogById = async (req, res) => {
           images: 1,
           tags: 1,
           viewsCount: 1,
+          likesCount: 1,
+          commentsCount: 1,
           createdAt: 1,
           "author.username": 1,
           "author.email": 1,
@@ -302,7 +429,6 @@ exports.getMyBlogs = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      results: blogs.length,
       data: { blogs },
       message: "Blogs fetched successfully",
     });
@@ -317,13 +443,19 @@ exports.getBlogsByUser = async (req, res) => {
     const { userId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid User ID format" });
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: "Invalid User ID format",
+      });
     }
 
-    const blogs = await Blog.find({ authorId: userId })
-      .populate("authorId", "username")
+    const blogs = await Blog.find({
+      authorId: userId,
+      status: "published",
+      deletedAt: null,
+    })
+      .select("title description coverImage category createdAt slug viewsCount")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -333,16 +465,40 @@ exports.getBlogsByUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching user blogs:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: error.message || "Something Went Wrong while fecting user Blogs",
+    });
   }
 };
 
 exports.getBlogBySlug = async (req, res) => {
   try {
+    const userId = req.user._id;
     const { slug } = req.params;
 
+    if (!userId|| !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: "Invalid userId",
+      });
+    }
+    await Blog.findOneAndUpdate(
+      {
+        slug,
+        status: "published",
+        "viewedBy.userId": { $ne: userId }, // only if user hasn't viewed
+      },
+      {
+        $push: { viewedBy: { userId } },
+        $inc: { viewsCount: 1 },
+      },
+    );
+
     const blog = await Blog.aggregate([
-      { $match: { slug: slug } },
+      { $match: { slug: slug, status: "published" } },
 
       {
         $lookup: {
@@ -381,6 +537,8 @@ exports.getBlogBySlug = async (req, res) => {
           images: 1,
           tags: 1,
           viewsCount: 1,
+          likesCount: 1,
+          commentsCount: 1,
           createdAt: 1,
           "author.username": 1,
           "author.email": 1,
@@ -415,13 +573,11 @@ exports.getBlogBySlug = async (req, res) => {
   }
 };
 
-exports.
-updateBlog = async (req, res) => {
+exports.updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { removeCoverImage } = req.body;
 
-    console.log(id);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
@@ -429,7 +585,6 @@ updateBlog = async (req, res) => {
         data: null,
       });
     }
-    console.log("id came", req.user._id);
     const blog = await Blog.findOne({ _id: id, authorId: req.user._id });
     if (!blog) {
       return res.status(404).json({
@@ -552,5 +707,398 @@ exports.deleteBlog = async (req, res) => {
       message: "Internal server error",
       data: null,
     });
+  }
+};
+
+exports.toggleLikeBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Blog ID",
+        data: null,
+      });
+    }
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found",
+        data: null,
+      });
+    }
+    const hasLiked = blog.likedBy.includes(userId);
+
+    if (hasLiked) {
+      blog.likedBy.pull(userId);
+      blog.likesCount = Math.max(0, blog.likesCount - 1);
+    } else {
+      blog.likedBy.push(userId);
+      blog.likesCount += 1;
+    }
+
+    blog.likesCount = blog.likedBy.length;
+    await blog.save();
+
+    return res.status(200).json({
+      success: true,
+      message: hasLiked ? "Blog unliked" : "Blog liked",
+      data: { likesCount: blog.likesCount },
+    });
+  } catch (error) {
+    console.error("Error toggling like for blog:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      data: null,
+    });
+  }
+};
+
+//Admin contollers
+exports.getAllBlogsAdmin = async (req, res) => {
+  try {
+    const { search, category, status, page, limit } = req.query;
+
+    const matchQuery = { deletedAt: null };
+    if (status && ["published", "draft", "scheduled"].includes(status)) {
+      matchQuery.status = status;
+    }
+
+    if (search && search.trim()) {
+      matchQuery.$or = [
+        { title: { $regex: search.trim(), $options: "i" } },
+        { description: { $regex: search.trim(), $options: "i" } },
+      ];
+    }
+
+    if (category && category !== "All") {
+      matchQuery.category = category;
+    }
+
+    const pipeline = [
+      { $match: matchQuery },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "userdetails",
+          localField: "author._id",
+          foreignField: "userId",
+          as: "author.profile",
+        },
+      },
+      {
+        $unwind: { path: "$author.profile", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $project: {
+          title: 1,
+          slug: 1,
+          description: 1,
+          category: 1,
+          status: 1,
+          coverImage: 1,
+          viewsCount: 1,
+          likesCount: 1,
+          commentsCount: 1,
+          tags: 1,
+          createdAt: 1,
+          publishedAt: 1,
+          scheduledFor: 1,
+          "author._id": 1,
+          "author.username": 1,
+          "author.email": 1,
+          "author.profile.firstName": 1,
+          "author.profile.lastName": 1,
+          "author.profile.profilePic": 1,
+        },
+      },
+    ];
+
+    const { data, pagination } = await aggregatePaginate(Blog, pipeline, {
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Blogs fetched successfully",
+      blogs: data,
+      pagination: {
+        totalBlogs: pagination.totalItems,
+        totalPages: pagination.totalPages,
+        currentPage: pagination.currentPage,
+        hasNextPage: pagination.hasNextPage,
+        hasPrevPage: pagination.hasPrevPage,
+      },
+    });
+  } catch (error) {
+    console.error("Error in Fecthign blogs in adminPanel: ", error.message);
+
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message:
+        error.message || "Admin: Something went wrong in fecthing Blogs ",
+    });
+  }
+};
+
+exports.getBlogByAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid Blog ID" });
+    }
+
+    const blog = await Blog.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "authorId",
+          foreignField: "_id",
+          as: "author",
+        },
+      },
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "userdetails",
+          localField: "author._id",
+          foreignField: "userId",
+          as: "author.profile",
+        },
+      },
+      {
+        $unwind: { path: "$author.profile", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $project: {
+          title: 1,
+          slug: 1,
+          content: 1,
+          description: 1,
+          category: 1,
+          status: 1,
+          coverImage: 1,
+          images: 1,
+          tags: 1,
+          viewsCount: 1,
+          likesCount: 1,
+          commentsCount: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          publishedAt: 1,
+          scheduledFor: 1,
+          deletedAt: 1,
+          "author._id": 1,
+          "author.username": 1,
+          "author.email": 1,
+          "author.profile.firstName": 1,
+          "author.profile.lastName": 1,
+          "author.profile.profilePic": 1,
+        },
+      },
+    ]);
+
+    if (!blog || blog.length === 0) {
+      return res.status(404).json({
+        success: false,
+        data: false,
+        message: "Blog not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { blog: blog[0] },
+      message: "Admin: Blog Fetched SUccessfully",
+    });
+  } catch (error) {
+    console.error("Admin getBlogById error:", error.message);
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+exports.updateBlogStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, scheduledFor } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid Blog ID" });
+    }
+
+    const validStatuses = ["published", "draft", "scheduled"];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: `Status must be one of: ${validStatuses.join(", ")}`,
+      });
+    }
+
+    if (status === "scheduled") {
+      if (!scheduledFor) {
+        return res.status(400).json({
+          success: false,
+          data: false,
+          message: "scheduledFor is required",
+        });
+      }
+      if (new Date(scheduledFor) <= new Date()) {
+        return res.status(400).json({
+          success: false,
+          data: false,
+          message: "scheduledFor must be a future date",
+        });
+      }
+    }
+
+    const updateData = { status };
+    if (status === "published") {
+      updateData.publishedAt = new Date();
+      updateData.scheduledFor = null;
+    } else if (status === "draft") {
+      updateData.publishedAt = null;
+      updateData.scheduledFor = null;
+    } else if (status === "scheduled") {
+      updateData.scheduledFor = new Date(scheduledFor);
+      updateData.publishedAt = null;
+    }
+
+    const blog = await Blog.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true },
+    ).lean();
+
+    if (!blog) {
+      return res
+        .status(404)
+        .json({ success: false, data: false, message: "Blog not found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Blog status updated to '${status}'`,
+      data: { blog },
+    });
+  } catch (error) {
+    console.error("Admin updateBlogStatus error:", error.message);
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
+exports.deleteBlogAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const hardDelete = req.query.hard === "true";
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ success: false, data: false, message: "Invalid Blog ID" });
+    }
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res
+        .status(404)
+        .json({ success: false, data: false, message: "Blog not found" });
+    }
+
+    if (hardDelete) {
+      await Blog.findByIdAndDelete(id);
+      return res.status(200).json({
+        success: true,
+        message: "Blog permanently deleted",
+      });
+    }
+
+    await Blog.findByIdAndUpdate(id, {
+      $set: { deletedAt: new Date(), status: "draft" },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Blog removed successfully",
+    });
+  } catch (error) {
+    console.error("Admin deleteBlog error:", error.message);
+    return res
+      .status(500)
+      .json({ success: false, dara: false, message: "Internal server error" });
+  }
+};
+exports.getActivityChart = async (req, res) => {
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [blogActivity, userActivity] = await Promise.all([
+      Blog.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo }, deletedAt: null } },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      userModel.aggregate([
+        { $match: { createdAt: { $gte: thirtyDaysAgo } } },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        blogs: blogActivity, // [{ _id: "2025-01-14", count: 3 }, ...]
+        users: userActivity, // [{ _id: "2025-01-14", count: 1 }, ...]
+      },
+    });
+  } catch (error) {
+    console.error("getActivityChart error:", error.message);
+    return res
+      .status(500)
+      .json({ success: false, data: false, message: "Internal server error" });
   }
 };
