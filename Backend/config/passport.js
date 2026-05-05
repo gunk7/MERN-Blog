@@ -3,7 +3,6 @@ const { Strategy: GoogleStrategy } = require("passport-google-oauth20");
 const User = require("../models/userModel");
 const UserDetail = require("../models/userDetail");
 
-console.log("Callback URL:", process.env.GOOGLE_CALLBACK_URL);
 passport.use(
   new GoogleStrategy(
     {
@@ -13,25 +12,22 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log("profile:", profile.id, profile.emails[0].value);
-
         const email = profile.emails[0].value.trim().toLowerCase();
 
         let user = await User.findOne({ googleId: profile.id });
-        console.log("existing google user:", user);
 
         if (user) return done(null, user);
 
-        const found = await User.findOne({ email: "gunukaur2807@gmail.com" });
-        console.log("hardcoded query:", found);
-        console.log("User model collection:", User.collection.name);
-        console.log("Total users:", await User.countDocuments());
-        const allUsers = await User.find({}).select("email googleId").lean();
-        console.log("All users:", JSON.stringify(allUsers));
+        user = await User.findOne({ email });
         if (user) {
+          // LINKING: Update existing local user to Google Auth
           user.googleId = profile.id;
           user.authProvider = "google";
           user.isAccountVerified = true;
+
+          // REMOVE PASSWORD: Set local password to undefined or null
+          // This prevents them from using the old local login
+          user.password = undefined;
           await user.save();
           return done(null, user);
         }
@@ -44,7 +40,6 @@ passport.use(
           isAccountVerified: true,
         });
         const savedUser = await User.findById(user._id);
-        console.log("saved user fetched:", savedUser);
         await UserDetail.create({
           userId: user._id,
           firstName: profile.name.givenName || "",

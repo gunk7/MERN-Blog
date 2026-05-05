@@ -22,6 +22,7 @@ const authTransform = createTransform(
     error: null,
     isVerifying: false,
     tempEmail: null,
+    authInitialized: false,
   }),
   { whitelist: ["auth"] },
 );

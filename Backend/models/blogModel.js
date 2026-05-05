@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Joi = require("joi");
 const { generateUniqueSlug } = require("../utils/slugGeneration");
 
-const BLOG_STATUSES = ["draft", "published", "scheduled"];
+const BLOG_STATUSES = ["draft", "published", "scheduled", "under_review"];
 const CATEGORIES = [
   "None",
   "Technology",
@@ -53,10 +53,17 @@ const blogSchema = new mongoose.Schema(
     category: { type: String, required: true, enum: CATEGORIES },
     status: {
       type: String,
-      enum: ["draft", "published", "scheduled"],
+      enum: ["draft", "published", "scheduled", "under_review"],
       default: "draft",
     },
+    adminNote: {
+      type: String,
+      trim: true,
+      maxlength: 300, // Limits size impact
+    },
+
     publishedAt: { type: Date },
+
     deletedAt: { type: Date },
     scheduledFor: { type: Date },
 
@@ -129,6 +136,9 @@ blogSchema.pre("save", async function () {
     // Clear scheduledFor if moved out of scheduled
     if (this.status !== "scheduled") {
       this.scheduledFor = null;
+    }
+    if (this.status !== "under_review") {
+      this.adminNote = undefined; // This removes the field from the BSON document entirely
     }
   }
 });

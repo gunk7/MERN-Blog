@@ -219,6 +219,10 @@ const CommentCard = ({
     comment.replyCount ?? comment.repliesCount ?? 0,
   );
 
+  const user = useSelector(selectCurrentUser);
+  const rawAuth = useSelector((state) => state.auth);
+  const rawUsers = useSelector((state) => state.users);
+
   const isOwner = currentUser?._id === (comment.author?._id || comment.userId);
   const isReply = depth > 0;
 

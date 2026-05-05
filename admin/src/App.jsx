@@ -7,18 +7,21 @@ import "react-toastify/dist/ReactToastify.css";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
-import PublicRoute from "./middleware/PublicRoute";
 import AdminOverview from "./pages/admin/AdminOverview";
 import UserManagement from "./pages/admin/UserManagement";
 import BlogManagement from "./pages/admin/BlogManagement";
 import AdminUserProfile from "./pages/admin/AdminUserProfile";
+import AdminBlogViewer from "./pages/admin/AdminBlogViewer";
+
+// Middleware
+import PublicRoute from "./middleware/PublicRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
-        {/* Admin Route Group */}
+        {/* Admin routes */}
         <Route element={<AdminLayout />}>
           <Route path="/dashboard" element={<AdminOverview />} />
           <Route path="/users" element={<UserManagement />} />
@@ -27,9 +30,10 @@ function App() {
             path="/users/profile/:username"
             element={<AdminUserProfile />}
           />
+          <Route path="/blogs/:id" element={<AdminBlogViewer />} />
         </Route>
 
-        {/* Public Route Group - Prevents logged-in users from seeing Login */}
+        {/* Public routes */}
         <Route element={<PublicRoute />}>
           <Route path="/" element={<Login />} />
         </Route>

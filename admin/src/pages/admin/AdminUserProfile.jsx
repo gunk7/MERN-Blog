@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import API from "../../services/axios";
@@ -491,7 +491,9 @@ const AdminUserProfile = () => {
           {blogs.length > 0 ? (
             <div className="flex flex-col gap-3">
               {blogs.map((blog, i) => (
-                <BlogRow key={blog._id} blog={blog} rank={i + 1} />
+                <Link key={blog._id} to={`/blogs/${blog._id}`}>
+                  <BlogRow blog={blog} rank={i + 1} />
+                </Link>
               ))}
             </div>
           ) : (

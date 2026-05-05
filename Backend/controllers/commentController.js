@@ -329,6 +329,7 @@ exports.getComments = async (req, res) => {
           replyCount: {
             $ifNull: [{ $arrayElemAt: ["$repliesData.count", 0] }, 0],
           },
+          "author._id": 1,
           "author.username": 1,
           "author.profile.firstName": 1,
           "author.profile.lastName": 1,

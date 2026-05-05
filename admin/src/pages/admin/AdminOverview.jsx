@@ -1,6 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+// 1. Import Recharts components
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import {
   fetchDashboardStats,
   fetchActivityChart,
@@ -9,21 +19,11 @@ import {
   Users,
   FileText,
   Eye,
-  Heart,
   TrendingUp,
   BookOpen,
+  RefreshCw,
 } from "lucide-react";
-import {
-  Bar,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  BarChart,
-} from "recharts";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n = 0) =>
   n >= 1000000
     ? `${(n / 1000000).toFixed(1)}M`
@@ -31,16 +31,94 @@ const fmt = (n = 0) =>
       ? `${(n / 1000).toFixed(1)}k`
       : String(n);
 
-// ─── Skeleton bone ────────────────────────────────────────────────────────────
 const Bone = ({ className }) => (
   <div
     className={`bg-surface-highest animate-pulse rounded-2xl ${className}`}
   />
 );
 
-// ─── Stat card ────────────────────────────────────────────────────────────────
+// ─── Recharts Component ──────────────────────────────────────────────────────
+const RechartsActivity = ({ data = [], color, chartTab }) => {
+  // Added chartTab prop
+  if (!data.length)
+    return (
+      <p className="text-xs italic text-on-surface-variant text-center py-8">
+        No data available.
+      </p>
+    );
+
+  // Format data for Recharts
+  const chartData = data.slice(-14).map((d) => ({
+    date: new Date(d._id).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    count: d.count,
+  }));
+
+  return (
+    <div className="h-48 w-full mt-2">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={chartData}
+          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            vertical={false}
+            stroke="rgba(0,0,0,0.05)"
+          />
+          <XAxis
+            dataKey="date"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b637a", fontSize: 10, fontWeight: "bold" }}
+            minTickGap={20}
+          />
+          <YAxis
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#6b637a", fontSize: 10 }}
+          />
+          <Tooltip
+            // Custom formatter to show specific labels[cite: 1]
+            formatter={(value) => [
+              value,
+              chartTab === "posts" ? "Post Count" : "User Count",
+            ]}
+            contentStyle={{
+              backgroundColor: "#fff",
+              borderRadius: "1.5rem",
+              border: "1px solid rgba(0,0,0,0.05)",
+              boxShadow: "0px 10px 30px rgba(106, 81, 136, 0.06)", // shadow-lavender
+              fontFamily: '"Times New Roman", serif', // font-display[cite: 1]
+              fontSize: "12px",
+            }}
+          />
+          <Area
+            type="monotone"
+            dataKey="count"
+            stroke={color}
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorGradient)"
+            animationDuration={1500}
+            animationEasing="ease-in-out"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
 const StatCard = ({ icon: Icon, label, value, sub, accent }) => (
-  <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-4 transition-all duration-300 hover:-translate-y-0.5">
+  <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-4 transition-all duration-300 hover:-translate-y-0.5 text-reveal">
     <div className="flex items-start justify-between">
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -65,93 +143,6 @@ const StatCard = ({ icon: Icon, label, value, sub, accent }) => (
   </div>
 );
 
-// ─── Recharts Activity Component ─────────────────────────────────────────────
-const ActivityChart = ({ data = [], color }) => {
-  if (!data || !data.length)
-    return (
-      <div className="w-full h-48 mt-4 flex items-center justify-center rounded-2xl bg-surface-low border border-surface-highest/40">
-        <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/50">
-          No data yet
-        </p>
-      </div>
-    );
-
-  const slice = data.slice(-14);
-
-  return (
-    // position:relative + overflow:hidden stops Recharts from measuring
-    // the full viewport width before the flex sidebar layout settles
-    <div
-      className="mt-4"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: 192,
-        overflow: "hidden",
-      }}
-    >
-      <ResponsiveContainer width="100%" height="100%" debounce={50}>
-        <BarChart
-          data={slice}
-          margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            vertical={false}
-            stroke="var(--color-surface-highest)"
-          />
-
-          <XAxis
-            dataKey="_id"
-            axisLine={false}
-            tickLine={false}
-            // Format "2026-04-22" to "Apr 22"
-            tickFormatter={(str) =>
-              new Date(str).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            }
-            // Only show every 2nd or 3rd label to prevent crowding
-            interval="preserveStartEnd"
-            minTickGap={20}
-            tick={{ fontSize: 9, fill: "var(--color-on-surface-variant)" }}
-          />
-
-          <YAxis
-            allowDecimals={false} // FIX: Removes 0.75, 1.5, etc.[cite: 2]
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 10, fill: "var(--color-on-surface-variant)" }}
-          />
-
-          <Tooltip
-            cursor={{ fill: "var(--color-surface-low)" }}
-            labelFormatter={(label) =>
-              new Date(label).toLocaleDateString("en-US", {
-                dateStyle: "medium",
-              })
-            }
-            contentStyle={{
-              borderRadius: "1.5rem",
-              border: "none",
-              boxShadow: "var(--shadow-lavender)",
-            }}
-          />
-
-          <Bar
-            dataKey="count"
-            fill={color}
-            radius={[4, 4, 0, 0]}
-            barSize={12} // Slightly wider bars look better with fewer days
-          />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-// ─── Top blog row ─────────────────────────────────────────────────────────────
 const TopBlogRow = ({ blog, rank }) => {
   const imgUrl = import.meta.env.VITE_API_IMG_URL;
   return (
@@ -186,22 +177,25 @@ const TopBlogRow = ({ blog, rank }) => {
   );
 };
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 const AdminOverview = () => {
   const dispatch = useDispatch();
   const { stats, activity, loading } = useSelector((state) => state.adminBlogs);
+  const [chartTab, setChartTab] = useState("posts");
 
-  useEffect(() => {
+  const load = () => {
     dispatch(fetchDashboardStats());
     dispatch(fetchActivityChart());
+  };
+
+  useEffect(() => {
+    load();
   }, [dispatch]);
 
   const isLoading = loading.stats || loading.activity;
 
   return (
-    <div className="min-h-screen bg-surface p-6 sm:p-8 flex flex-col gap-8 overflow-x-hidden w-full">
-      {/* ── Header ── */}
-      <header className="flex items-end justify-between">
+    <div className="min-h-screen bg-surface p-6 sm:p-8 flex flex-col gap-8">
+      <header className="flex items-end justify-between text-reveal">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">
             Wavelog
@@ -210,9 +204,24 @@ const AdminOverview = () => {
             Overview
           </h1>
         </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={load}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant hover:text-primary transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />{" "}
+            Refresh
+          </button>
+          <Link
+            to="/users"
+            className="text-xs font-bold text-primary hover:underline"
+          >
+            Manage Users →
+          </Link>
+        </div>
       </header>
 
-      {/* ── Stat cards ── */}
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -242,66 +251,63 @@ const AdminOverview = () => {
             accent="#d4845a"
           />
           <StatCard
-            icon={Heart}
-            label="Total Likes"
-            value={stats?.blogs?.totalLikes || 0}
-            accent="#c45e7c"
+            icon={TrendingUp}
+            label="Scheduled"
+            value={stats?.blogs?.scheduled || 0}
+            accent="#6a5188"
           />
         </div>
       )}
 
-      {/* ── Activity charts section ── */}
-      <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-8 overflow-hidden">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-          Last 14 days activity
-        </h2>
+      {/* ── Activity Chart ── */}
+      <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-4 text-reveal">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+            Activity
+          </h2>
+          <div className="flex items-center gap-1 bg-surface-low rounded-xl p-1">
+            <button
+              onClick={() => setChartTab("posts")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${chartTab === "posts" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              <BookOpen size={10} /> New Posts
+            </button>
+            <button
+              onClick={() => setChartTab("signups")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${chartTab === "signups" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+            >
+              <Users size={10} /> Signups
+            </button>
+          </div>
+        </div>
 
         {isLoading ? (
-          <div className="flex flex-col gap-10">
-            <div className="flex flex-col gap-2">
-              <Bone className="h-4 w-24" />
-              <Bone className="h-48 w-full" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Bone className="h-4 w-24" />
-              <Bone className="h-48 w-full" />
-            </div>
-          </div>
+          <Bone className="h-48" />
         ) : (
-          <div className="flex flex-col gap-10">
-            <div>
-              <p className="text-[11px] font-bold text-on-surface-variant mb-2 flex items-center gap-1.5">
-                <BookOpen size={11} /> New posts
-              </p>
-              <ActivityChart
-                data={activity?.blogs || []}
-                color="var(--color-primary)"
-              />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-on-surface-variant mb-2 flex items-center gap-1.5">
-                <Users size={11} /> New signups
-              </p>
-              <ActivityChart data={activity?.users || []} color="#4e9e7a" />
-            </div>
-          </div>
+          <RechartsActivity
+            data={
+              chartTab === "posts"
+                ? activity?.blogs || []
+                : activity?.users || []
+            }
+            color={chartTab === "posts" ? "#6a5188" : "#4e9e7a"}
+            chartTab={chartTab} 
+          />
         )}
       </div>
 
-      {/* ── Top blogs ── */}
-      <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender">
+      <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender text-reveal">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Top posts by views
           </h2>
           <Link
-            to="/dashboard/blogs"
+            to="/blogs"
             className="text-xs font-bold text-primary hover:underline"
           >
             All posts →
           </Link>
         </div>
-
         {isLoading ? (
           <div className="flex flex-col gap-3">
             {[...Array(5)].map((_, i) => (
@@ -321,9 +327,8 @@ const AdminOverview = () => {
         )}
       </div>
 
-      {/* ── User stats footer ── */}
       {!isLoading && stats?.users && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4 text-reveal">
           {[
             {
               label: "Verified",

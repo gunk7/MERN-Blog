@@ -1,24 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-// Added BookText icon for the "My Blogs" link
-import { LogOut, PenSquare, Search, Menu, X, BookText } from "lucide-react";
-import { logout } from "../redux/slice/authSlice";
+import { LogOut, PenSquare, Menu, X } from "lucide-react";
+// Import the thunk and selectors
+import { logoutUser } from "../redux/thunks/authThunks";
 import {
   selectCurrentUser,
   selectToken,
+  selectAuthLoading,
 } from "../redux/selectors/authSelectors";
 
-const Layout = ({}) => {
+const Layout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const access = useSelector(selectToken);
   const user = useSelector(selectCurrentUser);
+  const isLoading = useSelector(selectAuthLoading);
+  // Get refreshToken for backend revocation
+  const refreshToken = useSelector((state) => state.auth.refreshToken);
 
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // State for Logout Modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const dashboardLink = user?.role === "admin" ? "/dashboard" : "/profile";
   const dashboardLabel = user?.role === "admin" ? "Dashboard" : "Profile";
@@ -39,14 +45,52 @@ const Layout = ({}) => {
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY, isMenuOpen]);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  // Handle actual logout via thunk
+  const handleConfirmLogout = async (allDevices = false) => {
+    await dispatch(logoutUser({ refreshToken, allDevices }));
+    setShowLogoutModal(false);
     setIsMenuOpen(false);
     navigate("/login");
   };
 
   return (
     <div className="min-h-screen flex flex-col font-body bg-surface text-on-surface antialiased">
+      {/* --- LOGOUT MODAL --- */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-primary/10">
+            <h3 className="text-xl font-black tracking-tight mb-2">
+              Confirm Logout
+            </h3>
+            <p className="text-on-surface-variant text-sm mb-6">
+              Are you sure you want to end your session, {user?.firstName}?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                disabled={isLoading}
+                onClick={() => handleConfirmLogout(false)}
+                className="bg-primary text-white py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:opacity-90 transition-all"
+              >
+                {isLoading ? "Processing..." : "Logout"}
+              </button>
+              <button
+                disabled={isLoading}
+                onClick={() => handleConfirmLogout(true)}
+                className="bg-surface-low text-primary py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all"
+              >
+                Logout all devices
+              </button>
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-2 hover:text-on-surface"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header
         className={`w-full bg-white/95 backdrop-blur-md border-b border-primary/10 fixed top-0 z-50 transition-transform duration-500 ease-editorial ${
           isVisible ? "translate-y-0" : "-translate-y-full"
@@ -68,7 +112,6 @@ const Layout = ({}) => {
               Wavelog<span className="text-primary">.</span>
             </Link>
 
-            {/* --- DESKTOP NAV --- */}
             <nav className="hidden md:flex items-center gap-8 border-l border-primary/10 pl-10 text-[11px] font-bold uppercase tracking-[0.2em]">
               <Link to="/" className="hover:text-primary transition-colors">
                 Home
@@ -77,12 +120,10 @@ const Layout = ({}) => {
                 to="/blogs"
                 className="hover:text-primary transition-colors"
               >
-                Blogs{" "}
+                Blogs
               </Link>
-
               {access && (
                 <>
-                  {/* ADDED: My Blogs Link for Desktop */}
                   <Link
                     to="/my-blogs"
                     className="hover:text-primary transition-colors"
@@ -117,8 +158,9 @@ const Layout = ({}) => {
                   >
                     {user?.firstName}
                   </Link>
+                  {/* Updated trigger to open Modal */}
                   <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutModal(true)}
                     className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-on-surface-variant shadow-sm hover:text-rose-500 transition-colors"
                   >
                     <LogOut size={16} />
@@ -156,7 +198,6 @@ const Layout = ({}) => {
             >
               Home
             </Link>
-
             {access ? (
               <>
                 <Link
@@ -166,8 +207,6 @@ const Layout = ({}) => {
                 >
                   {dashboardLabel}
                 </Link>
-
-                {/* ADDED: My Blogs Link for Mobile */}
                 <Link
                   to="/my-blogs"
                   onClick={() => setIsMenuOpen(false)}
@@ -175,7 +214,6 @@ const Layout = ({}) => {
                 >
                   My Blogs
                 </Link>
-
                 <Link
                   to="/write"
                   onClick={() => setIsMenuOpen(false)}
@@ -183,9 +221,9 @@ const Layout = ({}) => {
                 >
                   <PenSquare size={14} /> Write Post
                 </Link>
-
+                {/* Updated trigger to open Modal */}
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutModal(true)}
                   className="text-rose-500 pt-4 border-t border-primary/5 w-1/2 flex justify-center"
                 >
                   <LogOut size={18} />
@@ -205,7 +243,7 @@ const Layout = ({}) => {
       </header>
 
       <main className="grow container mx-auto max-w-7xl px-6 pt-32 pb-12">
-        {<Outlet />}
+        <Outlet />
       </main>
 
       <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">

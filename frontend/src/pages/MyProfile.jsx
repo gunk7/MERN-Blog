@@ -160,7 +160,18 @@ const MyProfile = () => {
               />
               <StatCard
                 icon={<Calendar className="text-amber-500" />}
-                count={new Date(userDetail?.createdAt).getFullYear()}
+                count={
+                  userDetail?.createdAt
+                    ? new Date(userDetail.createdAt).toLocaleDateString(
+                        "en-GB",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric", // remove this line if you don't want year
+                        },
+                      )
+                    : "—"
+                }
                 label="Joined"
               />
             </div>
@@ -168,7 +179,7 @@ const MyProfile = () => {
             {/* Security Actions Group */}
             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-4">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2 mb-2">
-                Account Safety
+                Account Settings
               </h3>
 
               <button

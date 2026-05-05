@@ -10,7 +10,7 @@ import {
   LayoutGrid,
   ChevronDown,
 } from "lucide-react";
-import { selectCurrentUser } from "../../redux/selectors/authSelectors";
+import { isLoggedIn, selectCurrentUser } from "../../redux/selectors/authSelectors";
 import {
   getAllBlogs,
   getBlogsByUser,
@@ -69,6 +69,7 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
     activeTab = "all",
   } = useSelector((state) => state.blog);
 
+  const isAuthenticated = useSelector(isLoggedIn); // 👈 checks accessToken, not user
   const user = useSelector(selectCurrentUser);
   const [showAllChips, setShowAllChips] = useState(false);
 
@@ -325,7 +326,7 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
                     key={item._id}
                     to={`/blog/${item.slug}`}
                     onClick={(e) => {
-                      if (!user) {
+                      if (!isAuthenticated) {
                         e.preventDefault();
                         navigate("/login");
                       }

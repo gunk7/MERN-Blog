@@ -3,13 +3,13 @@ import API from "../../services/axios";
 
 export const getProfile = createAsyncThunk(
   "users/getProfile",
-  async (token, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await API.get("/user/",
-        token ? { headers: { Authorization: `Bearer ${token}` } } : {}
-      );
-      const data = response.data?.data || null;
-      return data;
+      // No need to pass headers here anymore!
+      const response = await API.get("/user/");
+
+      // Extracting data based on your controller's response structure
+      return response.data?.data || null;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }

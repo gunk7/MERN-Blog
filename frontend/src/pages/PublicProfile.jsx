@@ -11,10 +11,17 @@ import {
   UserMinus,
   BookOpen,
 } from "lucide-react";
-import { getPublicProfile, followUser, unfollowUser } from "../redux/thunks/userThunks";
+import {
+  getPublicProfile,
+  followUser,
+  unfollowUser,
+} from "../redux/thunks/userThunks";
 import { getBlogsByUser } from "../redux/thunks/blogThunks";
 import { clearPublicProfile } from "../redux/slice/userSlice";
-import { isLoggedIn, selectCurrentUser } from "../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectCurrentUser,
+} from "../redux/selectors/authSelectors";
 
 const PublicProfile = () => {
   const { username } = useParams();
@@ -71,7 +78,9 @@ const PublicProfile = () => {
     return (
       <div className="layout-new-age items-center justify-center text-reveal">
         <div className="text-center space-y-6">
-          <p className="font-display text-6xl text-primary/20 font-black">404</p>
+          <p className="font-display text-6xl text-primary/20 font-black">
+            404
+          </p>
           <h2 className="font-display text-3xl font-black text-on-surface tracking-tight">
             This profile doesn't exist.
           </h2>
@@ -98,7 +107,6 @@ const PublicProfile = () => {
 
   return (
     <main className="min-h-screen bg-surface text-reveal">
-
       {/* ── HERO ──────────────────────────────────────────────────────── */}
       <section className="relative bg-surface-low border-b border-surface-highest overflow-hidden">
         {/* Decorative blobs */}
@@ -111,7 +119,9 @@ const PublicProfile = () => {
             <img
               src={profileImage}
               alt={userDetail?.username}
-              onError={(e) => { e.target.src = "/default-avatar.png"; }}
+              onError={(e) => {
+                e.target.src = "/default-avatar.png";
+              }}
               className="w-36 h-36 sm:w-48 sm:h-48 rounded-[2.5rem] object-cover shadow-lavender border-4 border-white"
             />
             <div className="absolute -bottom-3 -right-3 bg-primary text-white p-2.5 rounded-2xl shadow-lg border-4 border-white">
@@ -151,17 +161,22 @@ const PublicProfile = () => {
                 onClick={handleFollow}
                 disabled={followLoading}
                 className={`flex items-center gap-2 px-8 py-4 rounded-full font-bold text-base transition-all active:scale-95 disabled:opacity-50
-                  ${isFollowing
-                    ? "bg-surface-highest text-on-surface-variant hover:bg-rose-50 hover:text-rose-600 border border-surface-highest"
-                    : "bg-primary hover:bg-primary-container text-white shadow-lg"
+                  ${
+                    isFollowing
+                      ? "bg-surface-highest text-on-surface-variant hover:bg-rose-50 hover:text-rose-600 border border-surface-highest"
+                      : "bg-primary hover:bg-primary-container text-white shadow-lg"
                   }`}
               >
                 {followLoading ? (
                   <Loader2 size={18} className="animate-spin" />
                 ) : isFollowing ? (
-                  <><UserMinus size={18} /> Unfollow</>
+                  <>
+                    <UserMinus size={18} /> Unfollow
+                  </>
                 ) : (
-                  <><UserPlus size={18} /> Follow</>
+                  <>
+                    <UserPlus size={18} /> Follow
+                  </>
                 )}
               </button>
             )}
@@ -189,7 +204,15 @@ const PublicProfile = () => {
           />
           <StatItem
             icon={<Calendar size={16} className="text-primary/60" />}
-            count={new Date(userDetail?.createdAt).getFullYear()}
+            count={
+              userDetail?.createdAt
+                ? new Date(userDetail.createdAt).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric", // remove this line if you don't want year
+                  })
+                : "—"
+            }
             label="Joined"
           />
         </div>
@@ -197,7 +220,6 @@ const PublicProfile = () => {
 
       {/* ── DETAILS + BLOGS ───────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 sm:px-12 py-16 grid grid-cols-1 lg:grid-cols-12 gap-12">
-
         {/* Left: personal details */}
         <aside className="lg:col-span-3 space-y-8">
           <div className="space-y-5">
@@ -205,7 +227,7 @@ const PublicProfile = () => {
               Details
             </h3>
             <DetailRow label="Country" value={userDetail?.country} />
-            <DetailRow label="Gender"  value={userDetail?.gender}  />
+            <DetailRow label="Gender" value={userDetail?.gender} />
           </div>
         </aside>
 
@@ -243,7 +265,8 @@ const PublicProfile = () => {
 // ── Blog Card ─────────────────────────────────────────────────────────────────
 
 const BlogCard = ({ blog }) => {
-  const hasCover = blog.coverImage && !blog.coverImage.includes("default-cover");
+  const hasCover =
+    blog.coverImage && !blog.coverImage.includes("default-cover");
 
   return (
     <Link
@@ -256,7 +279,9 @@ const BlogCard = ({ blog }) => {
             src={`${import.meta.env.VITE_API_IMG_URL}/${blog.coverImage}`}
             alt={blog.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            onError={(e) => { e.target.parentElement.style.display = "none"; }}
+            onError={(e) => {
+              e.target.parentElement.style.display = "none";
+            }}
           />
         </div>
       )}
@@ -296,9 +321,13 @@ const StatItem = ({ icon, count, label }) => (
   <div className="flex flex-col items-center sm:items-start gap-1 px-6 py-2 first:pl-0">
     <div className="flex items-center gap-1.5 text-on-surface-variant/50">
       {icon}
-      <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-black uppercase tracking-widest">
+        {label}
+      </span>
     </div>
-    <span className="font-display font-black text-3xl text-on-surface">{count}</span>
+    <span className="font-display font-black text-3xl text-on-surface">
+      {count}
+    </span>
   </div>
 );
 

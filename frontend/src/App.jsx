@@ -14,14 +14,12 @@ import PublicRoute from "./middleware/PublicRoute";
 import BlogDetail from "./pages/blog/BlogDetail";
 import MyBlog from "./pages/blog/MyBlog";
 import PublicProfile from "./pages/PublicProfile";
-import AuthCallback from "./pages/AuthCallback";
 
 function App() {
   return (
     <BrowserRouter>
       <ToastContainer position="top-right" autoClose={3000} />
       <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
         {/* Public routes — wrapped in Layout (header + footer) */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />

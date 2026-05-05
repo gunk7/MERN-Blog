@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   getCoreRowModel,
@@ -69,7 +69,6 @@ const StatusSelect = ({ blog }) => {
   const { loading } = useSelector((s) => s.adminBlogs);
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  console.log("blog status:", blog.status);
   const options = ["published", "draft", "scheduled"].filter(
     (s) => s !== blog.status,
   );
@@ -240,9 +239,12 @@ const BlogManagement = () => {
         accessorKey: "title",
         cell: ({ row }) => (
           <div className="max-w-xs text-left">
-            <p className="font-medium text-on-surface truncate">
+            <Link
+              to={`/blogs/${row.original._id}`}
+              className="font-medium text-on-surface truncate hover:text-primary transition-colors duration-200 block"
+            >
               {row.original.title}
-            </p>
+            </Link>
             {row.original.category && (
               <p className="text-[10px] font-bold uppercase tracking-widest text-primary mt-0.5">
                 {row.original.category}

@@ -28,7 +28,7 @@ const Login = () => {
   const [isForgotPwdOpen, setIsForgotPwdOpen] = useState(false);
   const [shouldAutoSend, setShouldAutoSend] = useState(false);
 
-  useEffect(() => {
+/*   useEffect(() => {
     if (access && user) {
       if (user.role === "admin") {
         navigate("/dashboard");
@@ -36,7 +36,7 @@ const Login = () => {
         navigate("/profile");
       }
     }
-  }, [access, user, navigate]);
+  }, [access, user, navigate]) */;
 
   const formik = useFormik({
     initialValues: { email: "", password: "" },

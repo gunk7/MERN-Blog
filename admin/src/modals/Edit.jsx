@@ -91,7 +91,7 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
         if (adminSelected) {
           await dispatch(updateProfileByAdmin({ userId: targetId, userData: formData })).unwrap();
           toast.success("Profile updated by Admin successfully");
-          dispatch(fetchAllUsers({ page: 1, limit: 5 }));
+          dispatch(fetchAllUsers({ page: 1, limit: 10 }));
         } else {
           await dispatch(updateProfile({ userId: targetId, userData: formData })).unwrap();
           toast.success("Profile updated successfully");

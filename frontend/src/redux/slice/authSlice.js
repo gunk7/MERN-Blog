@@ -1,5 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { login, signup, verifyOtp } from "../thunks/authThunks";
+import { REHYDRATE } from "redux-persist"; // 👈 add this import
+import { login, signup, verifyOtp, logoutUser } from "../thunks/authThunks";
+import { getProfile } from "../thunks/userThunks";
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -10,6 +13,7 @@ const authSlice = createSlice({
     error: null,
     isVerifying: false,
     tempEmail: null,
+    authInitialized: false, // 👈 add this
   },
   reducers: {
     logout: (state) => {
@@ -20,6 +24,7 @@ const authSlice = createSlice({
       state.error = null;
       state.isVerifying = false;
       state.tempEmail = null;
+      // ✅ keep authInitialized: true — user is still "initialized", just logged out
     },
     cancelVerification: (state) => {
       state.isVerifying = false;
@@ -35,12 +40,24 @@ const authSlice = createSlice({
     googleLogin: (state, action) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
+      state.user = action.payload.user || null;
       state.loading = false;
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // 👇 This fires automatically when redux-persist restores state
+      .addCase(REHYDRATE, (state, action) => {
+        state.authInitialized = true;
+        if (action.payload?.auth) {
+          state.accessToken =
+            action.payload.auth.accessToken ?? state.accessToken;
+          state.refreshToken =
+            action.payload.auth.refreshToken ?? state.refreshToken;
+          state.user = action.payload.auth.user ?? state.user;
+        }
+      })
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -48,7 +65,7 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.accessToken = action.payload.accessToken; // ← fixed
+        state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
       })
       .addCase(login.rejected, (state, action) => {
@@ -84,6 +101,18 @@ const authSlice = createSlice({
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(logoutUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        state.loading = false;
+      })
+      .addCase(getProfile.fulfilled, (state, action) => {
+        state.user = action.payload; // 👈 keeps auth.user in sync
       });
   },
 });

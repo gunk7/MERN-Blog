@@ -425,7 +425,9 @@ exports.getBlogById = async (req, res) => {
 exports.getMyBlogs = async (req, res) => {
   try {
     const { id } = req.user;
-    const blogs = await Blog.find({ authorId: id }).sort({ createdAt: -1 });
+    const blogs = await Blog.find({ authorId: id, deletedAt: null }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json({
       success: true,
@@ -478,7 +480,7 @@ exports.getBlogBySlug = async (req, res) => {
     const userId = req.user._id;
     const { slug } = req.params;
 
-    if (!userId|| !mongoose.Types.ObjectId.isValid(userId)) {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         success: false,
         data: false,
@@ -764,7 +766,10 @@ exports.getAllBlogsAdmin = async (req, res) => {
     const { search, category, status, page, limit } = req.query;
 
     const matchQuery = { deletedAt: null };
-    if (status && ["published", "draft", "scheduled"].includes(status)) {
+    if (
+      status &&
+      ["published", "draft", "scheduled", "under_review"].includes(status)
+    ) {
       matchQuery.status = status;
     }
 
@@ -817,6 +822,9 @@ exports.getAllBlogsAdmin = async (req, res) => {
           createdAt: 1,
           publishedAt: 1,
           scheduledFor: 1,
+          adminNote: 1,
+          status: 1,
+
           "author._id": 1,
           "author.username": 1,
           "author.email": 1,
@@ -1019,7 +1027,7 @@ exports.updateBlogStatus = async (req, res) => {
 exports.deleteBlogAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const hardDelete = req.query.hard === "true";
+    const { hard, reason } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
@@ -1034,7 +1042,8 @@ exports.deleteBlogAdmin = async (req, res) => {
         .json({ success: false, data: false, message: "Blog not found" });
     }
 
-    if (hardDelete) {
+    // A. Permanent removal
+    if (hard === "true") {
       await Blog.findByIdAndDelete(id);
       return res.status(200).json({
         success: true,
@@ -1042,13 +1051,19 @@ exports.deleteBlogAdmin = async (req, res) => {
       });
     }
 
-    await Blog.findByIdAndUpdate(id, {
-      $set: { deletedAt: new Date(), status: "draft" },
-    });
+    // B. Under Review (Flagging) - This is the "Admin Delete" action you wanted
+    // We update the status and set the reason.
+    blog.status = "under_review";
+    blog.adminNote =
+      reason || "This content is currently under review by an administrator.";
+    // Reset publishedAt so it doesn't appear in "Recent" lists if re-approved later
+    blog.publishedAt = undefined;
+
+    await blog.save();
 
     return res.status(200).json({
       success: true,
-      message: "Blog removed successfully",
+      message: "Blog has been moved to 'Under Review' and hidden from public.",
     });
   } catch (error) {
     console.error("Admin deleteBlog error:", error.message);
@@ -1057,6 +1072,7 @@ exports.deleteBlogAdmin = async (req, res) => {
       .json({ success: false, dara: false, message: "Internal server error" });
   }
 };
+
 exports.getActivityChart = async (req, res) => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);

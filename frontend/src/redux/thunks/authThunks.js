@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import API from "../../services/axios";
+import { logout } from "../slice/authSlice";
 
 export const login = createAsyncThunk(
   "auth/login",
@@ -22,7 +23,7 @@ export const signup = createAsyncThunk(
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
-      return rejectWithValue(err?.response?.data?.message|| "Signup Failed");
+      return rejectWithValue(err?.response?.data?.message || "Signup Failed");
     }
   },
 );
@@ -109,6 +110,20 @@ export const resetPassword = createAsyncThunk(
       return rejectWithValue(
         err.response.data.message || "Password Change Failed",
       );
+    }
+  },
+);
+
+export const logoutUser = createAsyncThunk(
+  "auth/logout",
+  async (logoutData, { dispatch, rejectWithValue }) => {
+    try {
+      const res = await API.post("/auth/logout", logoutData);
+      dispatch(logout());
+      return res?.data;
+    } catch (error) {
+      dispatch(logout());
+      return rejectWithValue(err?.response?.data?.message || "Logout Failed");
     }
   },
 );

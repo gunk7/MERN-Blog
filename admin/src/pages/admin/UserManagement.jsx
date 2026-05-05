@@ -194,11 +194,11 @@ const UserManagement = () => {
               src={
                 row.original.profilePic
                   ? `${imgUrl}/${row.original.profilePic}`
-                  : (defaultAvatar ||"/src/assets/image.png")
+                  : defaultAvatar || "/src/assets/image.png"
               }
               onError={(e) => {
                 e.target.onerror = null; // prevents infinite loop
-                e.target.src = defaultAvatar ||"/src/assets/image.png" ;
+                e.target.src = defaultAvatar || "/src/assets/image.png";
               }}
               alt="Profile"
               className="w-9 h-9 rounded-full border border-primary/10 object-contain p-0.5 bg-surface-low"
@@ -245,46 +245,49 @@ const UserManagement = () => {
         accessorKey: "isVerified",
         cell: ({ row }) => {
           const active = row.original.isAccountVerified;
+
           return (
-            <button
-              onClick={() => handleToggleVerify(row.original._id, active)}
-              className={`
-                relative inline-flex items-center rounded-full text-xs font-bold
-                transition-all duration-300 cursor-pointer select-none
-                w-36 h-8 px-1
-                ${
+            <div className="flex items-center justify-center">
+              <button
+                onClick={() => handleToggleVerify(row.original._id, active)}
+                className={`
+            relative inline-flex h-6 w-11 items-center rounded-full 
+            transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2
+            ${active ? "bg-green-500 focus:ring-green-500" : "bg-gray-300 focus:ring-gray-400"}
+          `}
+                title={
                   active
-                    ? "bg-green-100 border border-green-200"
-                    : "bg-amber-100 border border-amber-200"
+                    ? "Verified - Click to unverify"
+                    : "Unverified - Click to verify"
                 }
-              `}
-              title={`Click to ${active ? "unverify" : "verify"}`}
-            >
-              {/* sliding pill */}
-              <span
-                className={`
-                  absolute top-1 h-6 w-18 rounded-full transition-all duration-300
-                  ${active ? "left-1 bg-green-500" : "left-19 bg-amber-400"}
-                `}
-              />
-              {/* labels */}
-              <span
-                className={`
-                  relative z-10 flex-1 text-center transition-colors duration-300
-                  ${active ? "text-white" : "text-amber-700/60"}
-                `}
               >
-                Verified
-              </span>
-              <span
-                className={`
-                  relative z-10 flex-1 text-center transition-colors duration-300
-                  ${!active ? "text-white" : "text-green-700/60"}
-                `}
-              >
-                Unverified
-              </span>
-            </button>
+                <span
+                  className={`
+              flex h-4 w-4 transform items-center justify-center rounded-full bg-white 
+              transition-transform duration-300 shadow-sm
+              ${active ? "translate-x-6" : "translate-x-1"}
+            `}
+                >
+                  {/* Minimalist Verified Icon (Checkmark) */}
+                  {active && (
+                    <svg
+                      className="h-3 w-3 text-green-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </span>
+                
+              </button>
+            </div>
           );
         },
       },

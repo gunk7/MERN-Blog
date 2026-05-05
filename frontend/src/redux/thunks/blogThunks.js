@@ -113,7 +113,6 @@ export const getBlogBySlug = createAsyncThunk(
   async (slug, { rejectWithValue }) => {
     try {
       const response = await API.get(`/blogs/slug/${slug}`);
-      console.log(response);
       return response.data.data.blog;
     } catch (err) {
       return rejectWithValue(

@@ -28,7 +28,6 @@ export default function AuthCallback() {
     dispatch(getProfile(accessToken))
       .unwrap()
       .then((res) => {
-        console.log("profile success:", res);
         navigate("/profile");
       })
       .catch((err) => {

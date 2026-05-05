@@ -1,6 +1,43 @@
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { googleLogin } from "../redux/slice/authSlice";
+import { getProfile } from "../redux/thunks/userThunks";
+
 const GoogleButton = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:7878/api/auth/google";
+    const popup = window.open(
+      "http://localhost:7878/api/auth/google",
+      "Google Login",
+      "width=500,height=600,left=400,top=100",
+    );
+
+    const handleMessage = (event) => {
+      if (event.origin !== "http://localhost:7878") return;
+
+      const { accessToken, refreshToken, error } = event.data;
+
+      if (error) {
+        toast.error("Google login failed");
+        window.removeEventListener("message", handleMessage);
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        dispatch(googleLogin({ accessToken, refreshToken }));
+        dispatch(getProfile())
+          .unwrap()
+          .then(() => navigate("/profile"))
+          .catch(() => toast.error("Failed to load profile"));
+      }
+
+      window.removeEventListener("message", handleMessage);
+    };
+
+    window.addEventListener("message", handleMessage);
   };
 
   return (

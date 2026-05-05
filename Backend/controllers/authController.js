@@ -265,6 +265,10 @@ exports.login = async (req, res) => {
     const deviceInfo = req.headers["user-agent"] || "Unknown Device";
     const ipAddress = req.ip;
 
+    //Clear old tokens for this specific device/browser
+    await User.findByIdAndUpdate(user._id, {
+      $pull: { refreshTokens: { deviceInfo: deviceInfo } },
+    });
     await user.addRefreshToken(refreshToken, deviceInfo, ipAddress);
 
     // 6. Success
@@ -653,21 +657,26 @@ exports.refresh = async (req, res) => {
     if (!user.hasRefreshToken(refreshToken)) {
       return res.status(401).json({
         success: false,
+        data: false,
         message: "Session revoked. Please login again.",
       });
     }
 
-    // 4. Rotate — remove old, issue new
-    await user.removeRefreshToken(refreshToken);
+    // exports.refresh update
+    const deviceInfo = req.headers["user-agent"] || "Unknown Device";
+    const ipAddress = req.ip;
+
+    // CHANGE THIS: Instead of just user.removeRefreshToken(refreshToken)
+    // Use an atomic update to wipe the device sessions and add the new one
+    await User.findByIdAndUpdate(user._id, {
+      $pull: { refreshTokens: { deviceInfo: deviceInfo } },
+    });
 
     const newRefreshToken = generateRefreshToken(user);
     const newAccessToken = generateAccessToken(user);
 
-    const deviceInfo = req.headers["user-agent"] || "Unknown Device";
-    const ipAddress = req.ip;
-
+    // Add the rotated token
     await user.addRefreshToken(newRefreshToken, deviceInfo, ipAddress);
-
     // 5. Send both back
     res.status(200).json({
       success: true,
@@ -725,7 +734,7 @@ exports.logout = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      data: fasle,
+      data: false,
       message: error.message || "Logout failed",
     });
   }
@@ -739,7 +748,6 @@ exports.googleAuth = passport.authenticate("google", {
 // Step 2 — Google redirects back here
 
 exports.googleCallback = (req, res, next) => {
-  console.log("Google callback hit");
   passport.authenticate(
     "google",
     {
@@ -750,9 +758,12 @@ exports.googleCallback = (req, res, next) => {
       try {
         if (error || !user) {
           console.log("No user or error:", error);
-          return res.redirect(
-            `${process.env.CLIENT_URL}/login?error=google_failed`,
-          );
+          return res.send(`
+  <script>
+    window.opener.postMessage({ error: "google_failed" }, "${process.env.CLIENT_URL}");
+    window.close();
+  </script>
+`);
         }
         console.log("user found:", user._id);
 
@@ -765,13 +776,28 @@ exports.googleCallback = (req, res, next) => {
         const deviceInfo = req.headers["user-agent"] || "Unknown Device";
         const ipAddress = req.ip;
 
+        // Clear any existing Google or Local sessions for this device
+        await User.findByIdAndUpdate(user._id, {
+          $pull: { refreshTokens: { deviceInfo: deviceInfo } },
+        });
+
         await user.addRefreshToken(refreshToken, deviceInfo, ipAddress);
         console.log("refresh token saved");
 
-        // Redirect to frontend with both tokens in query params
+        /* // Redirect to frontend with both tokens in query params
         res.redirect(
           `${process.env.CLIENT_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`,
-        );
+        ); */
+
+        res.send(`
+  <script>
+    window.opener.postMessage(
+      { accessToken: "${accessToken}", refreshToken: "${refreshToken}" },
+      "${process.env.CLIENT_URL}"
+    );
+    window.close();
+  </script>
+`);
       } catch (error) {
         console.error("Wavelog Google Callback Error:", error.message);
         res.redirect(`${process.env.CLIENT_URL}/login?error=server_error`);
