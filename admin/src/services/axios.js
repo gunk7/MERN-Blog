@@ -88,7 +88,7 @@ API.interceptors.response.use(
         const { store } = await import("../store");
         const { logout } = await import("../redux/slice/authSlice");
         store.dispatch(logout());
-        window.location.href = "/login";
+        window.location.href = "/";
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

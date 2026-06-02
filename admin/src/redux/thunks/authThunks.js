@@ -6,109 +6,39 @@ export const login = createAsyncThunk(
   async (values, { rejectWithValue }) => {
     try {
       const res = await API.post("/auth/login", values);
-      const inputdata = res?.data?.data || [];
-      console.log(res);
+      const inputdata = res?.data?.data || {};
       return inputdata;
     } catch (err) {
-      return rejectWithValue(err.response.data.message || "Login Failed");
+      return rejectWithValue(err.response?.data?.message || "Login Failed");
     }
   },
 );
 
-export const signup = createAsyncThunk(
-  "auth/signup",
-  async (values, { rejectWithValue }) => {
+// ── Refresh Token Thunk ───────────────────────────────────────────────────────
+export const refreshToken = createAsyncThunk(
+  "auth/refresh",
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/signup", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(err.response.data.message || "Signup Failed");
-    }
-  },
-);
+      const state = getState();
+      const refreshToken = state.auth?.refreshToken;
 
-export const verifyOtp = createAsyncThunk(
-  "auth/verifyOtp",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/verify", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
+      if (!refreshToken) {
+        return rejectWithValue("No refresh token available");
+      }
+
+      const res = await API.post("/auth/refresh", {
+        refreshToken,
+      });
+
+      const inputdata = res?.data?.data || {};
+
+      return {
+        accessToken: inputdata.accessToken,
+        refreshToken: inputdata.refreshToken,
+      };
     } catch (err) {
       return rejectWithValue(
-        err.response.data.message || "Otp Verification Failed",
-      );
-    }
-  },
-);
-
-export const resendOtp = createAsyncThunk(
-  "auth/resendOtp",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/resendOtp", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(err.response.data.message || "Otp Resend Failed");
-    }
-  },
-);
-
-export const changePasswordReq = createAsyncThunk(
-  "auth/changePasswordReq",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/change_password_request", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(err.response.data.message || "Otp Resend Failed");
-    }
-  },
-);
-
-export const changePassword = createAsyncThunk(
-  "auth/changePassword",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/change_password", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(
-        err.response.data.message || "Password Change Failed",
-      );
-    }
-  },
-);
-
-export const forgotPassword = createAsyncThunk(
-  "auth/forgotPassword",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/forgot_password", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(
-        err.response.data.message || "Password Change Failed",
-      );
-    }
-  },
-);
-
-export const resetPassword = createAsyncThunk(
-  "auth/resetPassword",
-  async (values, { rejectWithValue }) => {
-    try {
-      const res = await API.post("/auth/reset_password", values);
-      const inputdata = res?.data?.data || [];
-      return inputdata;
-    } catch (err) {
-      return rejectWithValue(
-        err.response.data.message || "Password Change Failed",
+        err.response?.data?.message || "Token Refresh Failed",
       );
     }
   },

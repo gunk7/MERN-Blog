@@ -1,5 +1,7 @@
 const UserVerify = require("../models/userVerificationModel");
 const User = require("../models/userModel");
+const UserDetail = require("../models/userDetail");
+const Subscription = require("../models/subscriptionModel");
 const { generateOTP } = require("../utils/otpGenerator");
 const emailTemplates = require("../utils/emailTemplate");
 const bcrypt = require("bcryptjs");
@@ -10,10 +12,13 @@ const {
   verifyRefreshToken,
 } = require("../utils/jwt");
 const passport = require("passport");
+const UAParser = require("ua-parser-js");
 
 exports.signup = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    let { username, email, password } = req.body;
+
+    // 1. Basic validation
     if (!email || !username || !password) {
       return res.status(400).json({
         success: false,
@@ -22,72 +27,101 @@ exports.signup = async (req, res) => {
       });
     }
 
+    // 2. Normalize once
+    email = email.trim().toLowerCase();
+    username = username.trim().toLowerCase();
+
+    // (optional) minimal password policy
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
     const condition = {
-      $or: [
-        { email: email.trim().toLowerCase() },
-        { username: username.trim().toLowerCase() },
-      ],
+      $or: [{ email }, { username }],
     };
 
+    // 3. Check existing verified user
     const existingUser = await User.findOne(condition);
+
     if (existingUser) {
-      const message =
-        existingUser.email === email.toLowerCase()
-          ? "Email is already verified and registered. Please login"
-          : "Username is already taken";
+      if (existingUser.email === email) {
+        if (
+          existingUser.authProviders?.includes("google") &&
+          !existingUser.authProviders?.includes("local")
+        ) {
+          return res.status(409).json({
+            success: false,
+            data: false,
+            message:
+              "This email is registered with Google. Please login using Google.",
+          });
+        }
+
+        return res.status(409).json({
+          success: false,
+          data: false,
+          message: "Email is already registered. Please login.",
+        });
+      }
+
       return res.status(409).json({
         success: false,
         data: false,
-        message,
+        message: "Username is already taken",
       });
     }
 
-    const pendingUser = await UserVerify.findOne(condition);
-    if (pendingUser) {
-      const message =
-        pendingUser.email === email.toLowerCase()
-          ? "Verification OTP already sent to this email."
-          : "This username is currently awaiting verification by another user.";
-
-      return res.status(409).json({
-        success: false,
-        data: false,
-        message,
-      });
-    }
+    // 4. Upsert pending verification (instead of blocking)
     const otp = generateOTP(6);
-    await UserVerify.create({
-      username: username.trim().toLowerCase(),
-      email: email.trim().toLowerCase(),
-      password,
-      otp: {
-        code: otp,
-        type: "email_verification",
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        attempts: 0,
-      },
-    });
 
+    // hash both manually since findOneAndUpdate bypasses pre-save hooks
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(otp, 9);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    await UserVerify.findOneAndUpdate(
+      { email },
+      {
+        username,
+        email,
+        password: hashedPassword, // ← hashed
+        authProviders: ["local"],
+        otp: {
+          code: hashedOtp, // ← hashed
+          type: "email_verification",
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          attempts: 0,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    // 5. Send OTP
     const mail = emailTemplates.verificationOTP(otp);
     mailSend(email, mail.subject, mail.html);
 
     return res.status(201).json({
       success: true,
       data: email,
-      message: "An OTP has been sent for Verification. ",
+      message: "An OTP has been sent for verification.",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Signup Error:", error.message);
     res.status(500).json({
       success: false,
       data: false,
-      message: "Something Went Wrong while registration",
+      message: "Something went wrong while registration",
     });
   }
 };
 
 exports.verifyAndCreateUser = async (req, res) => {
   try {
+    console.log("verifyAndCreateUser called with body:", req.body);
     const { email, otp } = req.body;
 
     const verify = await UserVerify.findOne({
@@ -119,6 +153,10 @@ exports.verifyAndCreateUser = async (req, res) => {
     }
 
     const isMatch = await verify.compareOTP(otp);
+    console.log("Input OTP:", otp);
+    console.log("Stored hash:", verify.otp.code);
+    console.log("Match result:", isMatch);
+
     if (!isMatch) {
       verify.otp.attempts += 1;
       await verify.save();
@@ -130,11 +168,27 @@ exports.verifyAndCreateUser = async (req, res) => {
       });
     }
 
+    //  5. DOUBLE CHECK (race condition protection)
+    const existingUser = await User.findOne({
+      $or: [{ email: verify.email }, { username: verify.username }],
+    });
+
+    if (existingUser) {
+      await UserVerify.deleteOne({ _id: verify._id });
+
+      return res.status(409).json({
+        success: false,
+        message: "Account already exists. Please login.",
+      });
+    }
+
+    // 6. Create user (IMPORTANT CHANGE HERE)
     const user = await User.create({
       username: verify.username,
       email: verify.email,
       password: verify.password,
       isAccountVerified: true,
+      authProviders: ["local"],
     });
 
     await UserDetail.create({
@@ -142,7 +196,7 @@ exports.verifyAndCreateUser = async (req, res) => {
     });
 
     const mail = emailTemplates.welcome(verify.username);
-    await mailSend(email, mail.subject, mail.html);
+    mailSend(email, mail.subject, mail.html);
 
     await UserVerify.deleteOne({ _id: verify._id });
 
@@ -200,11 +254,11 @@ exports.login = async (req, res) => {
       });
     }
     //3/ Block Google accounts from local login
-    if (user.authProvider !== "local") {
+    if (!user.authProviders || !user.authProviders.includes("local")) {
       return res.status(401).json({
         success: false,
         data: false,
-        message: "This Account uses Google sign-in. Please Login with Google",
+        message: "This account uses Google sign-in. Please login with Google.",
       });
     }
     // 4. Scenario: User exists but is NOT verified
@@ -271,10 +325,26 @@ exports.login = async (req, res) => {
     });
     await user.addRefreshToken(refreshToken, deviceInfo, ipAddress);
 
+    const activeSubscription = await Subscription.findOne({
+      userId: user._id,
+      status: { $in: ["active", "cancelled"] },
+    }).lean();
+
     // 6. Success
     res.status(200).json({
       success: true,
-      data: { accessToken, refreshToken, user },
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+          role: user.role,
+          isAccountVerified: user.isAccountVerified,
+          hasPlan: !!activeSubscription,
+        },
+      },
       message: "Login Successful",
     });
   } catch (error) {
@@ -308,8 +378,6 @@ exports.resendOtp = async (req, res) => {
     }
 
     const newOtp = generateOTP(6);
-
-    // Update or Create the verification record
     const pendingUser = await UserVerify.findOneAndUpdate(
       { email: normalizedEmail },
       {
@@ -325,7 +393,7 @@ exports.resendOtp = async (req, res) => {
 
     // Send the Editorial Template
     const mail = emailTemplates.verificationOTP(newOtp);
-    await mailSend(normalizedEmail, mail.subject, mail.html);
+    mailSend(normalizedEmail, mail.subject, mail.html);
 
     return res.status(200).json({
       success: true,
@@ -773,8 +841,11 @@ exports.googleCallback = (req, res, next) => {
         const refreshToken = generateRefreshToken(user);
         console.log("refreshToken generated");
 
-        const deviceInfo = req.headers["user-agent"] || "Unknown Device";
-        const ipAddress = req.ip;
+        const parser = new UAParser(req.headers["user-agent"]);
+        const deviceInfo = `${parser.getBrowser().name} - ${parser.getOS().name}`;
+        const ipAddress =
+          req.headers["x-forwarded-for"]?.split(",")[0] ||
+          req.socket.remoteAddress;
 
         // Clear any existing Google or Local sessions for this device
         await User.findByIdAndUpdate(user._id, {
@@ -789,13 +860,19 @@ exports.googleCallback = (req, res, next) => {
           `${process.env.CLIENT_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`,
         ); */
 
+        const payload = JSON.stringify({
+          accessToken,
+          refreshToken,
+        });
+
         res.send(`
   <script>
-    window.opener.postMessage(
-      { accessToken: "${accessToken}", refreshToken: "${refreshToken}" },
-      "${process.env.CLIENT_URL}"
-    );
-    window.close();
+    if (window.opener) {
+      window.opener.postMessage(${payload}, "${process.env.CLIENT_URL}");
+      window.close();
+    } else {
+      window.location.href = "${process.env.CLIENT_URL}/auth/callback";
+    }
   </script>
 `);
       } catch (error) {

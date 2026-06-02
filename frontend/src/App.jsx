@@ -1,5 +1,13 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
+import { useSelector } from "react-redux";
 import Login from "./pages/Login";
 import { ToastContainer } from "react-toastify";
 import Signup from "./pages/Signup";
@@ -14,40 +22,69 @@ import PublicRoute from "./middleware/PublicRoute";
 import BlogDetail from "./pages/blog/BlogDetail";
 import MyBlog from "./pages/blog/MyBlog";
 import PublicProfile from "./pages/PublicProfile";
+import FloatingAIHub from "./components/FloatingAIHub";
+import PlanSelection from "./pages/PlanSelection";
+import { selectTempEmail } from "./redux/selectors/authSelectors";
+import PaymentStatus from "./pages/PaymentStatus";
 
 function App() {
   return (
     <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+function AppContent() {
+  const location = useLocation();
+
+  const showChat =
+    location.pathname === "/" ||
+    location.pathname === "/blogs" ||
+    location.pathname.startsWith("/author/");
+
+  return (
+    <>
       <ToastContainer position="top-right" autoClose={3000} />
+      {showChat && (
+        <FloatingAIHub showWritingTools={false} showSummary={false} />
+      )}
       <Routes>
-        {/* Public routes — wrapped in Layout (header + footer) */}
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/blogs" element={<BlogFeed mode="all" />} />
           <Route path="/author/:userId" element={<BlogFeed mode="user" />} />
           <Route path="/blog/:slug" element={<BlogDetail />} />
+          <Route path="/blog/id/:id" element={<BlogDetail />} />
 
-          {/* Guest only */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
           </Route>
 
-          {/* Logged-in users only */}
+          {/* Standalone — no auth required, no redirect */}
+
           <Route element={<ProtectedRoute />}>
             <Route path="/my-blogs" element={<MyBlog mode="mine" />} />
             <Route path="/profile" element={<MyProfile />} />
             <Route path="/userProfile/:username" element={<PublicProfile />} />
             <Route path="/write" element={<BlogEditor />} />
             <Route path="/edit-blog/:id" element={<BlogEditor />} />
+            <Route path="/onboarding/plan" element={<PlanSelectionWrapper />} />
+            <Route path="/payment-success" element={<PaymentStatus />} />
+            <Route path="/payment-cancel" element={<PaymentStatus />} />
           </Route>
 
-          {/* Fallback */}
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </>
   );
+}
+
+function PlanSelectionWrapper() {
+  const navigate = useNavigate();
+  return <PlanSelection onContinue={() => navigate("/profile")} />;
 }
 
 export default App;

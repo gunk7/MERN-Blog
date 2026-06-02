@@ -71,7 +71,7 @@ userVerificationSchema.pre("save", async function () {
     }
   }
   if (this.isModified("otp.code") && this.otp?.code) {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(9);
     this.otp.code = await bcrypt.hash(this.otp.code, salt);
   }
 });

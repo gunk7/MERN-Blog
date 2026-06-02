@@ -346,7 +346,7 @@ exports.getMyProfile = async (req, res) => {
           email: "$accountInfo.email",
           username: "$accountInfo.username",
           createdAt: "$accountInfo.createdAt",
-          followersCount: "$accountInfo.followersCount", 
+          followersCount: "$accountInfo.followersCount",
           followingCount: "$accountInfo.followingCount",
         },
       },
@@ -356,6 +356,7 @@ exports.getMyProfile = async (req, res) => {
 
     if (!userProfile) {
       userProfile = {
+        _id:userId,
         firstName: "Guest",
         lastName: "User",
         email: user.email,
@@ -676,6 +677,37 @@ exports.searchUsers = async (req, res) => {
 };
 
 //Admin controllers
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const adminId = new mongoose.Types.ObjectId(req.user._id);
+    const admin = await userModel
+    .findOne({ _id: adminId, role: "admin" })
+    .select(
+      "_id email username role isAccountVerified authProviders createdAt",
+    );
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        data: false,
+        message: "Admin not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Admin profile fetched successfully",
+      data: admin,
+    });
+  } catch (error) {
+    console.error("Error in Fetching Admin Profile: ", error.message);
+    return res.status(500).json({
+      success: false,
+      data: false,
+      message: error.message || "Error in fetching admin profile",
+    });
+  }
+};
+
 exports.getDashboardStats = async (req, res) => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

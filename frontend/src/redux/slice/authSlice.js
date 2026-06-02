@@ -9,11 +9,12 @@ const authSlice = createSlice({
     user: null,
     accessToken: null,
     refreshToken: null,
+    hasPlan: false,
     loading: false,
     error: null,
     isVerifying: false,
     tempEmail: null,
-    authInitialized: false, // 👈 add this
+    authInitialized: false,
   },
   reducers: {
     logout: (state) => {
@@ -21,10 +22,11 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
+      state.hasPlan = false;
       state.error = null;
       state.isVerifying = false;
       state.tempEmail = null;
-      // ✅ keep authInitialized: true — user is still "initialized", just logged out
+      state.authInitialized = true;
     },
     cancelVerification: (state) => {
       state.isVerifying = false;
@@ -40,22 +42,22 @@ const authSlice = createSlice({
     googleLogin: (state, action) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
-      state.user = action.payload.user || null;
+      state.hasPlan = action.payload.user.hasPlan ?? false;
+      state.user = null;
       state.loading = false;
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // 👇 This fires automatically when redux-persist restores state
       .addCase(REHYDRATE, (state, action) => {
         state.authInitialized = true;
+
         if (action.payload?.auth) {
-          state.accessToken =
-            action.payload.auth.accessToken ?? state.accessToken;
-          state.refreshToken =
-            action.payload.auth.refreshToken ?? state.refreshToken;
-          state.user = action.payload.auth.user ?? state.user;
+          state.accessToken = action.payload.auth.accessToken ?? null;
+          state.refreshToken = action.payload.auth.refreshToken ?? null;
+          state.hasPlan = action.payload.auth.hasPlan ?? false;
+          state.user = null;
         }
       })
       .addCase(login.pending, (state) => {
@@ -67,6 +69,8 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.accessToken = action.payload.accessToken;
         state.refreshToken = action.payload.refreshToken;
+        state.hasPlan = action.payload.user.hasPlan ?? false;
+        state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;

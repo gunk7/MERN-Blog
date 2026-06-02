@@ -28,7 +28,7 @@ const Signup = () => {
   const [showModal, setShowModal] = useState(false); // ✅ start as false
 
   useEffect(() => {
-    if (access) navigate("/dashboard");
+    if (access) navigate("/profile");
   }, [access, navigate]);
 
   useEffect(() => {

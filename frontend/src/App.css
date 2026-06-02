@@ -12,23 +12,32 @@
   --color-surface-high: #f0eaff;
   --color-surface-highest: #e9e2f8;
   --color-surface-lowest: #ffffff;
+  --color-surface-editor: #fdfcff; /* ← subtle canvas tint */
 
   --color-on-surface: #261e35;
   --color-on-surface-variant: #6b637a;
 
-  /* --- Font Families --- */
+  /* prose color hooks for @tailwindcss/typography */
+  --color-prose-headings: #261e35;
+  --color-prose-body: #261e35;
+  --color-prose-links: #6a5188;
+  --color-prose-bold: #261e35;
+  --color-prose-code: #6a5188;
+  --color-prose-quotes: #6b637a;
+  --color-prose-hr: #e9e2f8;
+
+  /* --- Font Families — Times New Roman kept --- */
   --font-display: "Times New Roman", Times, serif;
   --font-body: "Times New Roman", Times, serif;
 
   /* --- Custom Shadow --- */
-  --shadow-lavender: 
-    0px 10px 30px rgba(106, 81, 136, 0.06), 
+  --shadow-lavender:
+    0px 10px 30px rgba(106, 81, 136, 0.06),
     0px 4px 12px rgba(106, 81, 136, 0.03);
 
   /* --- Transition & Animation --- */
   --ease-editorial: cubic-bezier(0.23, 1, 0.32, 1);
-  
-  /* Define the keyframes and animation variable here */
+
   @keyframes reveal {
     from {
       opacity: 0;
@@ -40,6 +49,20 @@
     }
   }
   --animation-reveal: reveal 1s var(--ease-editorial) forwards;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+  }
+  --animation-float: float 15s ease-in-out infinite;
 }
 
 @utility layout-new-age {
@@ -48,31 +71,30 @@
 }
 
 @utility text-reveal {
-  /* Using standard CSS animation to avoid Tailwind "unknown class" errors */
   animation: var(--animation-reveal);
 }
 
 @utility card-auth {
-  @apply bg-white border border-black/5 rounded-4xl sm:rounded-[4xl] 
-         p-5 sm:p-10 shadow-lavender 
+  @apply bg-white border border-black/5 rounded-4xl sm:rounded-[4xl]
+         p-5 sm:p-10 shadow-lavender
          w-[calc(100%-2rem)] max-w-110 mx-auto
-         transition-all duration-500 ease-editorial hover:-translate-y-1 
+         transition-all duration-500 ease-editorial hover:-translate-y-1
          overflow-hidden box-border;
 }
 
 @utility input-editorial {
-  @apply bg-surface-low border border-primary/10 
-         p-3 sm:p-4 rounded-xl sm:rounded-2xl 
-         text-base outline-none focus:ring-2 focus:ring-primary-fixed-dim 
-         transition-all text-on-surface 
+  @apply bg-surface-low border border-primary/10
+         p-3 sm:p-4 rounded-xl sm:rounded-2xl
+         text-base outline-none focus:ring-2 focus:ring-primary-fixed-dim
+         transition-all text-on-surface
          w-full box-border block;
 }
 
 @utility btn-editorial {
-  @apply bg-primary hover:bg-primary-container text-white 
-         p-3 sm:p-4 rounded-full font-bold 
-         text-base sm:text-lg shadow-lg transition-all 
-         flex items-center justify-center gap-3 
+  @apply bg-primary hover:bg-primary-container text-white
+         p-3 sm:p-4 rounded-full font-bold
+         text-base sm:text-lg shadow-lg transition-all
+         flex items-center justify-center gap-3
          active:scale-95 disabled:opacity-50 w-full;
 }
 
@@ -100,7 +122,169 @@
   @apply px-6 py-4 text-sm text-on-surface border-t border-surface-highest/30;
 }
 
+@utility glass-panel {
+  @apply bg-white/70 backdrop-blur-xl border border-white/20
+         shadow-lavender rounded-4xl transition-all
+         duration-500 ease-editorial;
+}
+
+@utility pop-blob {
+  @apply fixed -z-10 blur-[100px] opacity-40 rounded-full;
+  background: radial-gradient(
+    circle,
+    var(--color-primary-container),
+    var(--color-primary)
+  );
+  animation: var(--animation-float);
+}
+
+body.ai-panel-open .ai-panel-shift {
+  margin-right: 26rem;
+}
+
+@utility skeleton-editorial {
+  @apply relative overflow-hidden bg-surface-highest;
+  animation: pulseSoft 2s ease-in-out infinite;
+}
+
+@utility skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.7),
+    transparent
+  );
+  animation: shimmer 1.8s infinite;
+}
+
+@utility loading-bar-editorial {
+  @apply h-0.5 bg-primary/10 overflow-hidden rounded-full;
+}
+
+@utility loading-bar-progress {
+  @apply h-full w-1/3 bg-primary-fixed-dim;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.ai-panel-shift {
+  transition: margin-right 0.3s ease-in-out;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes streamFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.stream-fade {
+  animation: streamFadeIn 0.14s ease-out;
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  background-color: var(--color-primary, #6d28d9);
+  vertical-align: middle;
+  margin-left: 2px;
+  border-radius: 2px;
+  animation: blink 0.8s step-end infinite;
+}
+
+@keyframes orbit-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+
+.orbit-dot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  top: 50%;
+  left: 50%;
+  animation: orbit-fade 1s linear infinite;
+}
+
 body {
   @apply bg-surface font-body antialiased min-h-screen;
   font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+}
+
+/* ── TipTap editor — matches MarkdownRenderer preview styles ─────────────── */
+
+.tiptap {
+  @apply outline-none;
+}
+
+.tiptap blockquote {
+  @apply border-l-[3px] border-primary bg-primary-fixed
+         pl-5 py-4 pr-5 my-7 rounded-r-2xl
+         italic text-on-surface-variant text-[1.02rem] leading-relaxed;
+}
+
+.tiptap blockquote p {
+  @apply mb-0 text-on-surface-variant;
+}
+
+.tiptap pre {
+  @apply bg-surface-high text-on-surface
+         border border-primary/15 rounded-2xl
+         p-5 my-6 overflow-x-auto
+         font-mono text-sm leading-relaxed
+         shadow-sm;
+}
+
+.tiptap pre code {
+  @apply bg-transparent border-none p-0 text-inherit;
+  font-size: inherit;
+}
+
+.tiptap code {
+  @apply bg-primary-fixed text-primary
+         border border-primary/20
+         px-1.5 py-0.5 rounded-md
+         font-mono text-[0.82em];
 }

@@ -11,6 +11,16 @@ import {
   searchUsers,
 } from "../thunks/blogThunks";
 
+const DRAFT_INITIAL = {
+  title: "",
+  description: "",
+  contentHtml: "",
+  contentJson: {},
+  category: "None",
+  status: "draft",
+  tags: [],
+};
+
 const blogSlice = createSlice({
   name: "blog",
   initialState: {
@@ -20,6 +30,9 @@ const blogSlice = createSlice({
     blogs: [],
     userBlogs: [],
     currentBlog: null,
+
+    //Blog Draft
+    draft: DRAFT_INITIAL,
 
     // ── search results for Accounts tab
     userSearchResults: [],
@@ -108,6 +121,13 @@ const blogSlice = createSlice({
     setActiveTab: (state, action) => {
       state.activeTab = action.payload;
     },
+
+    saveDraft: (state, action) => {
+      state.draft = { ...state.draft, ...action.payload };
+    },
+    clearDraft: (state) => {
+      state.draft = DRAFT_INITIAL;
+    },
   },
 
   extraReducers: (builder) => {
@@ -182,6 +202,7 @@ const blogSlice = createSlice({
         state.loading = false;
         state.createSuccess = true;
         state.userBlogs.unshift(action.payload);
+        state.draft = DRAFT_INITIAL;
       })
 
       // ── updateBlog ────────────────────────────────────────────────────
@@ -255,6 +276,8 @@ export const {
   clearCategories,
   clearUserSearch,
   setActiveTab,
+  saveDraft,
+  clearDraft,
 } = blogSlice.actions;
 
 export default blogSlice.reducer;

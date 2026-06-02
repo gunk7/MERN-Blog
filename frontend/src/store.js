@@ -10,12 +10,11 @@ import createTransform from "redux-persist/es/createTransform";
 
 const authTransform = createTransform(
   (state) => ({
-    user: state.user,
     accessToken: state.accessToken,
     refreshToken: state.refreshToken,
   }),
   (state) => ({
-    user: state.user,
+    user: null,
     accessToken: state.accessToken,
     refreshToken: state.refreshToken,
     loading: false,
@@ -34,7 +33,7 @@ const persistConfig = {
   transforms: [authTransform],
 };
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   auth: authReducer,
   admin: adminReducer,
   users: userReducer,
@@ -42,7 +41,16 @@ const rootReducer = combineReducers({
   comment: commentReducer,
 });
 
+const rootReducer = (state, action) => {
+  if (action.type === "RESET_APP") {
+    state = undefined;
+  }
+
+  return appReducer(state, action);
+};
+
 const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 
 export const store = configureStore({
   reducer: persistedReducer,

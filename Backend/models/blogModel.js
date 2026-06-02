@@ -11,6 +11,7 @@ const CATEGORIES = [
   "Science",
   "Culture",
   "Health & Wellness",
+  "Animals",
   "Finance",
   "Education",
   "Travel",
@@ -27,7 +28,11 @@ const blogSchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true, trim: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, maxlength: 200 },
-    content: { type: String, required: true, maxlength: 5000 },
+    contentHtml: { type: String, required: true, maxlength: 20000 },
+    contentJson: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
 
     coverImage: {
       type: String,
@@ -68,12 +73,17 @@ const blogSchema = new mongoose.Schema(
     scheduledFor: { type: Date },
 
     viewsCount: { type: Number, default: 0, min: 0 },
+
     viewedBy: [
       {
         userId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
           required: true,
+        },
+        viewedAt: {
+          type: Date,
+          default: Date.now,
         },
       },
     ],
@@ -99,7 +109,7 @@ blogSchema.index({ deletedAt: 1 }, { sparse: true }); // soft-delete lookups
 
 // Estimated read time (avg 200 wpm)
 blogSchema.virtual("readTime").get(function () {
-  const words = this.content?.trim().split(/\s+/).length ?? 0;
+  const words = this.contentHtml?.trim().split(/\s+/).length ?? 0;
   const minutes = Math.ceil(words / 200);
   return `${minutes} min read`;
 });

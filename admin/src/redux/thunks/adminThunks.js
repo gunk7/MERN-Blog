@@ -15,6 +15,18 @@ export const fetchAllUsers = createAsyncThunk(
   },
 );
 
+export const getAdminProfile = createAsyncThunk(
+  "admin/getProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await API.get("/admin/me");
+      return response.data.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  },
+);
+
 export const updateProfileByAdmin = createAsyncThunk(
   "users/updateProfile",
   async ({ userId, userData }, { rejectWithValue }) => {
@@ -67,16 +79,22 @@ export const fetchUserProfileAdmin = createAsyncThunk(
 );
 
 // ─── Fetch all blogs (admin view) ────────────────────────────────────────────
-// Supports filters: { status, search, category, page, limit }
 export const fetchAllBlogsAdmin = createAsyncThunk(
   "adminBlogs/fetchAll",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/blogs", { params });
-      console.log(response);
+      const cleanParams = { ...params };
+
+      // "deleted" tab → send deleted=true, remove status
+      if (cleanParams.status === "deleted") {
+        delete cleanParams.status;
+        cleanParams.deleted = true;
+      }
+
+      const response = await API.get("/admin/blogs", { params: cleanParams });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error?.response?.error?.message || error.message);
+      return rejectWithValue(error?.response?.data?.message || error.message);
     }
   },
 );
@@ -100,10 +118,11 @@ export const fetchBlogByIdAdmin = createAsyncThunk(
 // payload: { blogId, status: "published" | "draft" | "scheduled", scheduledFor? }
 export const updateBlogStatusAdmin = createAsyncThunk(
   "adminBlogs/updateStatus",
-  async ({ blogId, status, scheduledFor }, { rejectWithValue }) => {
+  async ({ blogId, status, adminNote, scheduledFor }, { rejectWithValue }) => {
     try {
       const res = await API.patch(`/admin/blogs/${blogId}/status`, {
         status,
+        adminNote,
         ...(scheduledFor && { scheduledFor }),
       });
       return res.data.data;
@@ -116,13 +135,16 @@ export const updateBlogStatusAdmin = createAsyncThunk(
 // ─── Delete blog (admin force delete) ────────────────────────────────────────
 // hard = true for permanent delete, false for soft-delete
 export const deleteBlogAdmin = createAsyncThunk(
-  "adminBlogs/delete",
-  async ({ blogId, hard = false }, { rejectWithValue }) => {
+  "admin/deleteBlog",
+  async ({ blogId, reason, hard }, { rejectWithValue }) => {
     try {
-      await API.delete(`/admin/blogs/${blogId}`, { params: { hard } });
-      return blogId; // return id so we can remove it from state
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      // Constructs URL: /admin/blogs/123?reason=Content+Policy&hard=false
+      const { data } = await API.delete(`/admin/blogs/${blogId}`, {
+        params: { reason, hard },
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response.data.message);
     }
   },
 );
@@ -143,10 +165,13 @@ export const fetchDashboardStats = createAsyncThunk(
 // ─── Fetch activity chart data (last 30 days) ────────────────────────────────
 export const fetchActivityChart = createAsyncThunk(
   "adminStats/fetchActivity",
-  async (_, { rejectWithValue }) => {
+  async (days = 30, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/stats/activity");
-      return response.data.data; // { blogs: [{_id, count}], users: [{_id, count}] }
+      const response = await API.get("/admin/stats/activity", {
+        params: { days },
+      });
+      console.log(response);
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
     }

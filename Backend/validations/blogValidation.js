@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const {  BLOG_STATUSES, CATEGORIES } = require("../models/blogModel");
+const { BLOG_STATUSES, CATEGORIES } = require("../models/blogModel");
 
 const objectId = Joi.string()
   .pattern(/^[a-f\d]{24}$/i)
@@ -7,46 +7,50 @@ const objectId = Joi.string()
 
 // ─── Image object schema ───────────────────────────────────────────────────────
 const imageSchema = Joi.object({
-  url:      Joi.string().required().messages({ "string.empty": "Image URL cannot be empty" }),
-  filename: Joi.string().required().messages({ "string.empty": "Image filename cannot be empty" }),
-  size:     Joi.number().max(5 * 1024 * 1024).messages({
-    "number.max": "Each image must be under 5MB",
+  url: Joi.string().required().messages({
+    "string.empty": "Image URL cannot be empty",
   }),
-  order: Joi.number().integer().min(0).default(0),
+
+  filename: Joi.string().required().messages({
+    "string.empty": "Image filename cannot be empty",
+  }),
+
+  size: Joi.number()
+    .max(5 * 1024 * 1024)
+    .messages({
+      "number.max": "Each image must be under 5MB",
+    }),
 });
 
 // ─── Main schema ──────────────────────────────────────────────────────────────
 const blogJoiSchema = Joi.object({
   title: Joi.string().trim().max(150).messages({
     "string.empty": "Title cannot be empty",
-    "string.max":   "Title cannot exceed 150 characters",
+    "string.max": "Title cannot exceed 150 characters",
   }),
 
   description: Joi.string().max(200).messages({
     "string.empty": "Description cannot be empty",
-    "string.max":   "Description cannot exceed 200 characters",
+    "string.max": "Description cannot exceed 200 characters",
   }),
 
-  content: Joi.string().max(5000).messages({
+  contentHtml: Joi.string().max(20000).messages({
     "string.empty": "Content cannot be empty",
-    "string.max":   "Content cannot exceed 5000 characters",
+    "string.max": "Content cannot exceed 20000 characters",
   }),
 
- 
-  coverImage: Joi.string().allow(null, "").default("uploads/blogs/covers/default-cover.png"),
+  contentJson: Joi.object().required(),
+
+  coverImage: Joi.string()
+    .allow(null, "")
+    .default("uploads/blogs/covers/default-cover.png"),
 
   // ── Images array ────────────────────────────────────────────────────────────
-  images: Joi.array()
-    .items(imageSchema)
-    .max(5)
-    .default([])
-    .messages({
-      "array.max":  "A blog can have at most 5 content images",
-      "array.base": "Images must be an array",
-    }),
-
-  authorId: objectId.optional(),
-
+  images: Joi.array().items(imageSchema).max(10).default([]).messages({
+    "array.base": "Images must be an array",
+    "array.max": "A blog can have at most 10 images",
+  }),
+  
   tags: Joi.array()
     .items(Joi.string().trim().lowercase().max(30))
     .max(10)
@@ -61,7 +65,7 @@ const blogJoiSchema = Joi.object({
     .valid(...CATEGORIES)
     .messages({
       "string.empty": "Category cannot be empty",
-      "any.only":     `Category must be one of: ${CATEGORIES.join(", ")}`,
+      "any.only": `Category must be one of: ${CATEGORIES.join(", ")}`,
     }),
 
   status: Joi.string()
@@ -81,65 +85,74 @@ const blogJoiSchema = Joi.object({
     .greater("now")
     .allow(null)
     .when("status", {
-      is:   "scheduled",
+      is: "scheduled",
       then: Joi.required().messages({
         "any.required": "scheduledFor is required when status is 'scheduled'",
       }),
     })
     .when("status", {
-      is:   Joi.valid("draft", "published"),
+      is: Joi.valid("draft", "published"),
       then: Joi.valid(null).messages({
-        "any.only": "scheduledFor must be null when status is 'draft' or 'published'",
+        "any.only":
+          "scheduledFor must be null when status is 'draft' or 'published'",
       }),
     })
     .messages({
-      "date.format":  "scheduledFor must be a valid ISO date",
+      "date.format": "scheduledFor must be a valid ISO date",
       "date.greater": "scheduledFor must be a future date",
     }),
 });
 
 // ─── Validate middleware factory ──────────────────────────────────────────────
-const REQUIRED_ON_CREATE = ["title", "description", "content", "category"];
+const REQUIRED_ON_CREATE = ["title", "description", "contentHtml", "category"];
 
 const validate = (operation) => (req, res, next) => {
-  // Merge multer file paths into req.body before validation
-  if (req.files) {
-    if (req.files.coverImage?.[0]) {
-      req.body.coverImage = req.files.coverImage[0].path.replace(/\\/g, "/");
+  try {
+    // Parse JSON safely
+    if (typeof req.body.contentJson === "string") {
+      req.body.contentJson = JSON.parse(req.body.contentJson);
     }
-    if (req.files.images?.length) {
-      req.body.images = req.files.images.map((f, i) => ({
-        url:      f.path.replace(/\\/g, "/"),
-        filename: f.filename,
-        size:     f.size,
-        order:    i,
-      }));
+
+    if (typeof req.body.images === "string") {
+      req.body.images = JSON.parse(req.body.images);
     }
+
+    if (!req.body.contentJson) {
+      req.body.contentJson = {};
+    }
+
+    // Required fields only on create
+    let schema = blogJoiSchema;
+
+    if (operation === "create") {
+      schema = schema.fork(REQUIRED_ON_CREATE, (field) => field.required());
+    }
+
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((d) => ({
+          field: d.path.join("."),
+          message: d.message,
+        })),
+      });
+    }
+
+    req.body = value;
+
+    next();
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid JSON format",
+    });
   }
-
-  const schema =
-    operation === "update"
-      ? blogJoiSchema
-          .fork(REQUIRED_ON_CREATE, (field) => field.optional())
-          .min(1)
-          .messages({ "object.min": "Provide at least one field to update" })
-      : blogJoiSchema.fork(REQUIRED_ON_CREATE, (field) => field.required());
-
-  const { error, value } = schema.validate(req.body, {
-    abortEarly:    false,
-    stripUnknown:  true,
-    convert:       true,
-  });
-
-  if (error) {
-    const errors = error.details.map((d) => d.message);
-    return res.status(400).json({ success: false, message: errors.join(", "), data: null });
-  }
-
-  req.body = value;
-  next();
 };
-
 module.exports = {
   validateCreateBlog: validate("create"),
   validateUpdateBlog: validate("update"),

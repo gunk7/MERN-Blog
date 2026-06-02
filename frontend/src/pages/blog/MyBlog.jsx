@@ -22,6 +22,7 @@ import {
   Plus,
   MoreHorizontal,
   Bookmark,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { confirmAction } from "../../services/modalServices";
@@ -67,25 +68,43 @@ const MyBlogs = () => {
   };
 
   const toggleStatus = async (blog) => {
-    const newStatus = blog.status === "published" ? "draft" : "published";
+    // under_review → can only move to draft, not published directly
+    if (blog.status === "under_review") {
+      const result = await confirmAction(
+        "Move to Draft?",
+        "You can edit this post and republish once changes are made.",
+        "question",
+        "Yes, move to draft",
+      );
+      if (!result.isConfirmed) return;
 
+      const formData = new FormData();
+      formData.append("status", "draft");
+      dispatch(updateBlog({ id: blog._id, formData }))
+        .unwrap()
+        .then(() =>
+          toast.success("Moved to draft — make your edits and republish"),
+        )
+        .catch((e) => toast.error(e || "Failed"));
+      return;
+    }
+
+    // normal published ↔ draft toggle
+    const newStatus = blog.status === "published" ? "draft" : "published";
     const result = await confirmAction(
       "Change Status?",
       `Do you want to move this Blog to ${newStatus}?`,
       "question",
       "Yes, move it",
     );
+    if (!result.isConfirmed) return;
 
-    if (result.isConfirmed) {
-      const formData = new FormData();
-      formData.append("status", newStatus);
-
-      dispatch(updateBlog({ id: blog._id, formData })).then(() => {
-        // Logic inside the curly braces runs ONLY after success
-        toast.success(`Moved to ${newStatus}`);
-        navigate("/my-blogs");
-      });
-    }
+    const formData = new FormData();
+    formData.append("status", newStatus);
+    dispatch(updateBlog({ id: blog._id, formData }))
+      .unwrap()
+      .then(() => toast.success(`Moved to ${newStatus}`))
+      .catch((e) => toast.error(e || "Failed"));
   };
   // TanStack Table Column Definitions
   const columns = useMemo(
@@ -118,6 +137,11 @@ const MyBlogs = () => {
                       <Clock size={12} /> Scheduled
                     </div>
                   )}
+                  {blog.status === "under_review" && (
+                    <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded text-[10px] font-bold italic">
+                      <AlertCircle size={12} /> Under Review
+                    </div>
+                  )}
                 </div>
 
                 <h3
@@ -131,7 +155,23 @@ const MyBlogs = () => {
                   {blog.description ||
                     "No description provided for this editorial piece."}
                 </p>
-
+                {/* After description, before engagement row */}
+                {blog.status === "under_review" && blog.adminNote && (
+                  <div className="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl mb-4">
+                    <AlertCircle
+                      size={14}
+                      className="text-amber-600 shrink-0 mt-0.5"
+                    />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-amber-800 mb-0.5">
+                        Flagged by Admin
+                      </p>
+                      <p className="text-xs text-amber-900 leading-relaxed">
+                        {blog.adminNote}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {/* Engagement Mockup from Image */}
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-6 text-on-surface-variant/40">
@@ -152,10 +192,16 @@ const MyBlogs = () => {
                       onClick={() => toggleStatus(blog)}
                       className="p-2 hover:bg-surface-high rounded-full transition-colors text-on-surface-variant"
                       title={
-                        blog.status === "published" ? "Unpublish" : "Publish"
+                        blog.status === "under_review"
+                          ? "Move to Draft"
+                          : blog.status === "published"
+                            ? "Unpublish"
+                            : "Publish"
                       }
                     >
-                      {blog.status === "published" ? (
+                      {blog.status === "under_review" ? (
+                        <FileText size={18} /> // ← same as unpublish icon
+                      ) : blog.status === "published" ? (
                         <FileText size={18} />
                       ) : (
                         <Globe size={18} />
@@ -232,7 +278,7 @@ const MyBlogs = () => {
 
         {/* Tab System */}
         <div className="flex gap-8 border-b border-primary/5 mb-4">
-          {["published", "draft", "scheduled"].map((tab) => (
+          {["published", "draft", "scheduled", "under_review"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

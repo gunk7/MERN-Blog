@@ -57,7 +57,7 @@ const Layout = () => {
     <div className="min-h-screen flex flex-col font-body bg-surface text-on-surface antialiased">
       {/* --- LOGOUT MODAL --- */}
       {showLogoutModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-primary/10">
             <h3 className="text-xl font-black tracking-tight mb-2">
               Confirm Logout
@@ -241,23 +241,24 @@ const Layout = () => {
           </nav>
         </div>
       </header>
+      <div className="transition-all duration-300 ease-in-out ai-panel-shift">
+        <main className="grow pt-20">
+          <Outlet />
+        </main>
 
-      <main className="grow container mx-auto max-w-7xl px-6 pt-32 pb-12">
-        <Outlet />
-      </main>
-
-      <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <h2 className="text-2xl font-black tracking-tighter">
-              Wavelog<span className="text-primary">.</span>
-            </h2>
-            <p className="text-[10px] text-on-surface-variant italic font-body">
-              Where thoughts find their rhythm.
-            </p>
+        <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <h2 className="text-2xl font-black tracking-tighter">
+                Wavelog<span className="text-primary">.</span>
+              </h2>
+              <p className="text-[10px] text-on-surface-variant italic font-body">
+                Where thoughts find their rhythm.
+              </p>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 };

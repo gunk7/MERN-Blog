@@ -4,6 +4,7 @@ import {
   deleteUser,
   toggleUserStatus,
   fetchUserProfileAdmin,
+  getAdminProfile,
 } from "../thunks/adminThunks";
 
 const adminSlice = createSlice({
@@ -18,6 +19,10 @@ const adminSlice = createSlice({
       stats: null,
       blogs: [],
     },
+
+    adminProfile: null,
+    adminProfileLoading: false,
+    adminProfileError: null,
 
     loading: false,
     profileLoading: false,
@@ -100,6 +105,21 @@ const adminSlice = createSlice({
         user.isAccountVerified = newStatus;
       }
     });
+
+    // --- FETCH ADMIN PROFILE ---
+    builder
+      .addCase(getAdminProfile.pending, (state) => {
+        state.adminProfileLoading = true;
+        state.adminProfileError = null;
+      })
+      .addCase(getAdminProfile.fulfilled, (state, action) => {
+        state.adminProfileLoading = false;
+        state.adminProfile = action.payload;
+      })
+      .addCase(getAdminProfile.rejected, (state, action) => {
+        state.adminProfileLoading = false;
+        state.adminProfileError = action.payload;
+      });
   },
 });
 

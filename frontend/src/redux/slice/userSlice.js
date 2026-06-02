@@ -25,6 +25,19 @@ const userSlice = createSlice({
       state.publicProfile = null;
       state.publicProfileError = null;
     },
+
+    clearUserState: (state) => {
+      state.loading = false;
+      state.error = null;
+
+      state.profile = null;
+
+      state.publicProfile = null;
+      state.publicProfileLoading = false;
+      state.publicProfileError = null;
+
+      state.followLoading = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -108,5 +121,5 @@ const userSlice = createSlice({
       });
   },
 });
-export const { clearPublicProfile } = userSlice.actions;
+export const { clearPublicProfile,clearUserState } = userSlice.actions;
 export default userSlice.reducer;

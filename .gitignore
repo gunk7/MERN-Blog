@@ -12,6 +12,14 @@ package-lock.json
 
 # Uploads (important)
 Backend/uploads/
+Backend/script/
+
 
 # Optional (if you don't want images tracked)
 *.png
+# Logs
+Backend/logs/
+*.log
+
+# Logger file
+Backend/logger.js

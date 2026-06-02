@@ -15,6 +15,7 @@ const blogScheduler = () => {
           $set: {
             status: "published",
             publishedAt: now,
+            scheduledFor: null,
           },
         },
       );

@@ -31,6 +31,27 @@ const filterFileType = (req, file, cb) => {
   cb(new Error("Invalid Image File Type"));
 };
 
+// PDF storage configuration
+const pdfStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const pdfUploadPath = path.join("uploads", "invoices");
+    fs.mkdirSync(pdfUploadPath, { recursive: true });
+    cb(null, pdfUploadPath);
+  },
+  filename: function (req, file, cb) {
+    const invoiceId = req.body?.invoiceId || "invoice";
+    cb(null, invoiceId + path.extname(file.originalname));
+  },
+});
+
+const filterPDFType = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ext === ".pdf" && file.mimetype === "application/pdf") {
+    return cb(null, true);
+  }
+  cb(new Error("Invalid PDF File Type"));
+};
+
 const uploadImage = multer({
   storage: imageStorage,
   fileFilter: filterFileType,
@@ -39,9 +60,20 @@ const uploadImage = multer({
 
 const uploadBlogFiles = uploadImage.fields([
   { name: "coverImage", maxCount: 1 },
-  { name: "images", maxCount: 5 },
 ]);
 
-const uploadSingleImage = uploadImage.single("profilePic");
+const uploadPdf = multer({
+  storage: pdfStorage,
+  fileFilter: filterPDFType,
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
-module.exports = { uploadBlogFiles, uploadSingleImage };
+const uploadInlineImage = uploadImage.array("image", 10);
+const uploadSingleImage = uploadImage.single("profilePic");
+const uploadInvoicePdf = uploadPdf.single("invoice");
+module.exports = {
+  uploadBlogFiles,
+  uploadInlineImage,
+  uploadSingleImage,
+  uploadInvoicePdf,
+};

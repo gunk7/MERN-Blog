@@ -1,20 +1,27 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { isLoggedIn, selectAuthInitialized } from "../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectAuthInitialized,
+  selectCurrentUser,
+} from "../redux/selectors/authSelectors";
+
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 const PublicRoute = () => {
   const loggedIn = useSelector(isLoggedIn);
   const authInitialized = useSelector(selectAuthInitialized);
+  const user = useSelector(selectCurrentUser);
+
   const location = useLocation();
 
-  // Wait for rehydration — don't redirect prematurely
   if (!authInitialized) return null;
 
   const isAuthPage =
     location.pathname === "/login" || location.pathname === "/signup";
 
-  if (loggedIn && isAuthPage) {
+  // wait until user is fetched
+  if (loggedIn && user && isAuthPage) {
     return <Navigate to="/profile" replace />;
   }
 

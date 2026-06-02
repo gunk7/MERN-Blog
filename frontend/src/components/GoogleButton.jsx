@@ -7,22 +7,34 @@ import { getProfile } from "../redux/thunks/userThunks";
 const GoogleButton = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const API_ORIGIN = import.meta.env.VITE_API_IMG_URL;
 
   const handleGoogleLogin = () => {
     const popup = window.open(
-      "http://localhost:7878/api/auth/google",
+      `${API_BASE}/auth/google`,
       "Google Login",
       "width=500,height=600,left=400,top=100",
     );
 
+    if (!popup) {
+      toast.error("Popup was blocked. Please allow popups for this site.");
+      return;
+    }
+
+    const cleanup = () => {
+      window.removeEventListener("message", handleMessage);
+      clearInterval(closedTimer);
+    };
+
     const handleMessage = (event) => {
-      if (event.origin !== "http://localhost:7878") return;
+      if (event.origin !== API_ORIGIN) return;
 
       const { accessToken, refreshToken, error } = event.data;
+      cleanup();
 
       if (error) {
         toast.error("Google login failed");
-        window.removeEventListener("message", handleMessage);
         return;
       }
 
@@ -30,12 +42,23 @@ const GoogleButton = () => {
         dispatch(googleLogin({ accessToken, refreshToken }));
         dispatch(getProfile())
           .unwrap()
-          .then(() => navigate("/profile"))
+          .then(async () => {
+            try {
+              const { data } = await API.get("/subscription/me");
+              navigate(data.success ? "/profile" : "/onboarding/plan");
+            } catch {
+              navigate("/onboarding/plan");
+            }
+          })
           .catch(() => toast.error("Failed to load profile"));
       }
-
-      window.removeEventListener("message", handleMessage);
     };
+
+    const closedTimer = setInterval(() => {
+      if (popup.closed) {
+        cleanup();
+      }
+    }, 500);
 
     window.addEventListener("message", handleMessage);
   };

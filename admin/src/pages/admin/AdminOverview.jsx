@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-// 1. Import Recharts components
 import {
   AreaChart,
   Area,
@@ -11,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
 import {
   fetchDashboardStats,
   fetchActivityChart,
@@ -37,9 +37,8 @@ const Bone = ({ className }) => (
   />
 );
 
-// ─── Recharts Component ──────────────────────────────────────────────────────
+// ─── Recharts Activity Chart ─────────────────────────────────────────────────
 const RechartsActivity = ({ data = [], color, chartTab }) => {
-  // Added chartTab prop
   if (!data.length)
     return (
       <p className="text-xs italic text-on-surface-variant text-center py-8">
@@ -47,18 +46,22 @@ const RechartsActivity = ({ data = [], color, chartTab }) => {
       </p>
     );
 
-  // Format data for Recharts
-  const chartData = data.slice(-14).map((d) => ({
-    date: new Date(d._id).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    count: d.count,
-  }));
+  const chartData = data
+    .filter((d) => d?.date)
+    .map((d) => ({
+      date: (() => {
+        const [year, month, day] = d.date.split("-").map(Number);
+        return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      })(),
+      count: d.count,
+    }));
 
   return (
-    <div className="h-48 w-full mt-2">
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ width: "100%", height: 192, minWidth: 0 }} className="mt-2">
+      <ResponsiveContainer width="100%" height={192}>
         <AreaChart
           data={chartData}
           margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -87,7 +90,6 @@ const RechartsActivity = ({ data = [], color, chartTab }) => {
             tick={{ fill: "#6b637a", fontSize: 10 }}
           />
           <Tooltip
-            // Custom formatter to show specific labels[cite: 1]
             formatter={(value) => [
               value,
               chartTab === "posts" ? "Post Count" : "User Count",
@@ -96,8 +98,8 @@ const RechartsActivity = ({ data = [], color, chartTab }) => {
               backgroundColor: "#fff",
               borderRadius: "1.5rem",
               border: "1px solid rgba(0,0,0,0.05)",
-              boxShadow: "0px 10px 30px rgba(106, 81, 136, 0.06)", // shadow-lavender
-              fontFamily: '"Times New Roman", serif', // font-display[cite: 1]
+              boxShadow: "0px 10px 30px rgba(106, 81, 136, 0.06)",
+              fontFamily: '"Times New Roman", serif',
               fontSize: "12px",
             }}
           />
@@ -117,6 +119,125 @@ const RechartsActivity = ({ data = [], color, chartTab }) => {
   );
 };
 
+// ─── Post Status Donut Chart ──────────────────────────────────────────────────
+const STATUS_META = [
+  { key: "published", label: "Published", color: "#4e9e7a" },
+  { key: "draft", label: "Draft", color: "#6a5188" },
+  { key: "scheduled", label: "Scheduled", color: "#d4845a" },
+  { key: "under_review", label: "Under Review", color: "#888780" },
+];
+
+const PostStatusChart = ({ stats }) => {
+  const counts = STATUS_META.map((s) => stats?.blogs?.[s.key] || 0);
+  const total = counts.reduce((a, b) => a + b, 0);
+
+  const size = 144;
+  const stroke = 20;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+
+  let offset = 0;
+  const slices = STATUS_META.map((s, i) => {
+    const pct = total ? counts[i] / total : 0;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    const rotate = (offset / circumference) * 360 - 90;
+    offset += dash;
+    return { ...s, dash, gap, rotate, count: counts[i], pct };
+  });
+
+  return (
+    <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender text-reveal">
+      <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-5">
+        Post status breakdown
+      </h2>
+      <div className="flex items-center gap-8 flex-wrap">
+        {/* SVG Donut */}
+        <div
+          className="relative shrink-0"
+          style={{ width: size, height: size }}
+        >
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            {total === 0 ? (
+              <circle
+                cx={size / 2}
+                cy={size / 2}
+                r={r}
+                fill="none"
+                stroke="#f0edf5"
+                strokeWidth={stroke}
+              />
+            ) : (
+              slices.map((s) => (
+                <circle
+                  key={s.key}
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={r}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth={stroke}
+                  strokeDasharray={`${s.dash} ${s.gap}`}
+                  strokeDashoffset={0}
+                  transform={`rotate(${s.rotate} ${size / 2} ${size / 2})`}
+                  strokeLinecap="butt"
+                />
+              ))
+            )}
+            <text
+              x={size / 2}
+              y={size / 2 - 6}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="20"
+              fontWeight="bold"
+              fill="#1a1523"
+            >
+              {fmt(total)}
+            </text>
+            <text
+              x={size / 2}
+              y={size / 2 + 14}
+              textAnchor="middle"
+              fontSize="9"
+              fontWeight="bold"
+              fill="#6b637a"
+              style={{ textTransform: "uppercase", letterSpacing: "0.08em" }}
+            >
+              TOTAL
+            </text>
+          </svg>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-col gap-2.5 flex-1 min-w-[180px]">
+          {slices.map((s) => {
+            const pct = total ? Math.round((s.count / total) * 100) : 0;
+            return (
+              <div key={s.key} className="flex items-center gap-2 text-[13px]">
+                <span
+                  className="w-2.5 h-2.5 rounded-sm shrink-0"
+                  style={{ background: s.color }}
+                />
+                <span className="flex-1 text-on-surface-variant">
+                  {s.label}
+                </span>
+                <span className="font-bold text-on-surface w-8 text-right">
+                  {fmt(s.count)}
+                </span>
+                <span className="text-on-surface-variant w-9 text-right">
+                  {pct}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 const StatCard = ({ icon: Icon, label, value, sub, accent }) => (
   <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-4 transition-all duration-300 hover:-translate-y-0.5 text-reveal">
     <div className="flex items-start justify-between">
@@ -143,6 +264,7 @@ const StatCard = ({ icon: Icon, label, value, sub, accent }) => (
   </div>
 );
 
+// ─── Top Blog Row ─────────────────────────────────────────────────────────────
 const TopBlogRow = ({ blog, rank }) => {
   const imgUrl = import.meta.env.VITE_API_IMG_URL;
   return (
@@ -177,24 +299,34 @@ const TopBlogRow = ({ blog, rank }) => {
   );
 };
 
+// ─── Days Toggle ──────────────────────────────────────────────────────────────
+const DAY_OPTIONS = [7, 14, 30, 90];
+
+// ─── Admin Overview ───────────────────────────────────────────────────────────
 const AdminOverview = () => {
   const dispatch = useDispatch();
   const { stats, activity, loading } = useSelector((state) => state.adminBlogs);
   const [chartTab, setChartTab] = useState("posts");
+  const [days, setDays] = useState(30);
 
   const load = () => {
     dispatch(fetchDashboardStats());
-    dispatch(fetchActivityChart());
+    dispatch(fetchActivityChart(days));
   };
 
   useEffect(() => {
-    load();
+    dispatch(fetchDashboardStats());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchActivityChart(days));
+  }, [dispatch, days]);
 
   const isLoading = loading.stats || loading.activity;
 
   return (
     <div className="min-h-screen bg-surface p-6 sm:p-8 flex flex-col gap-8">
+      {/* ── Header ── */}
       <header className="flex items-end justify-between text-reveal">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">
@@ -222,6 +354,7 @@ const AdminOverview = () => {
         </div>
       </header>
 
+      {/* ── Stat Cards ── */}
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -259,25 +392,61 @@ const AdminOverview = () => {
         </div>
       )}
 
+      {/* ── Post Status Breakdown ── */}
+      {isLoading ? (
+        <Bone className="h-52" />
+      ) : (
+        <PostStatusChart stats={stats} />
+      )}
+
       {/* ── Activity Chart ── */}
       <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender flex flex-col gap-4 text-reveal">
-        <div className="flex items-center justify-between">
+        {/* Chart header row */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Activity
           </h2>
-          <div className="flex items-center gap-1 bg-surface-low rounded-xl p-1">
-            <button
-              onClick={() => setChartTab("posts")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${chartTab === "posts" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              <BookOpen size={10} /> New Posts
-            </button>
-            <button
-              onClick={() => setChartTab("signups")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${chartTab === "signups" ? "bg-white text-primary shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              <Users size={10} /> Signups
-            </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Days range selector */}
+            <div className="flex items-center gap-1 bg-surface-low rounded-xl p-1">
+              {DAY_OPTIONS.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDays(d)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${
+                    days === d
+                      ? "bg-white text-primary shadow-sm"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  {d}d
+                </button>
+              ))}
+            </div>
+
+            {/* Posts / Signups tab */}
+            <div className="flex items-center gap-1 bg-surface-low rounded-xl p-1">
+              <button
+                onClick={() => setChartTab("posts")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${
+                  chartTab === "posts"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                <BookOpen size={10} /> New Posts
+              </button>
+              <button
+                onClick={() => setChartTab("signups")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all duration-200 ${
+                  chartTab === "signups"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                <Users size={10} /> Signups
+              </button>
+            </div>
           </div>
         </div>
 
@@ -291,11 +460,12 @@ const AdminOverview = () => {
                 : activity?.users || []
             }
             color={chartTab === "posts" ? "#6a5188" : "#4e9e7a"}
-            chartTab={chartTab} 
+            chartTab={chartTab}
           />
         )}
       </div>
 
+      {/* ── Top Posts ── */}
       <div className="bg-white border border-black/5 rounded-4xl p-6 shadow-lavender text-reveal">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
@@ -327,6 +497,7 @@ const AdminOverview = () => {
         )}
       </div>
 
+      {/* ── User Stats Footer ── */}
       {!isLoading && stats?.users && (
         <div className="grid grid-cols-3 gap-4 text-reveal">
           {[

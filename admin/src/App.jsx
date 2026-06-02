@@ -12,9 +12,11 @@ import UserManagement from "./pages/admin/UserManagement";
 import BlogManagement from "./pages/admin/BlogManagement";
 import AdminUserProfile from "./pages/admin/AdminUserProfile";
 import AdminBlogViewer from "./pages/admin/AdminBlogViewer";
+import AdminPlansPage from "./pages/admin/AdminPlansPage";
 
 // Middleware
 import PublicRoute from "./middleware/PublicRoute";
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
 
 function App() {
   return (
@@ -23,9 +25,11 @@ function App() {
       <Routes>
         {/* Admin routes */}
         <Route element={<AdminLayout />}>
+          <Route path="/profile" element={<AdminProfilePage />} />
           <Route path="/dashboard" element={<AdminOverview />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/blogs" element={<BlogManagement />} />
+          <Route path="/plans" element={<AdminPlansPage />} />
           <Route
             path="/users/profile/:username"
             element={<AdminUserProfile />}

@@ -2,10 +2,7 @@ import { createSelector } from "@reduxjs/toolkit";
 
 const selectAuth = (state) => state.auth;
 
-export const selectCurrentUser = (state) => {
-  const profile = state.auth.user ?? state.users.profile;
-  return profile?.userDetail ?? profile;
-};
+export const selectCurrentUser = (state) => state.auth.user;
 
 export const selectAuthLoading = (state) => selectAuth(state).loading;
 export const selectAuthError = (state) => selectAuth(state).error;

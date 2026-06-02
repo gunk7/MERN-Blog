@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   getCoreRowModel,
@@ -15,6 +15,7 @@ import {
   Eye,
   MoreHorizontal,
   Calendar,
+  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -31,7 +32,6 @@ import {
 import { confirmAction } from "../../services/modalServices";
 import ScheduleModal from "../../modals/ScheduleModal";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n = 0) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
@@ -42,6 +42,8 @@ const StatusBadge = ({ status }) => {
       "status-badge bg-surface-high text-on-surface-variant border border-surface-highest",
     scheduled:
       "status-badge bg-primary-fixed text-primary border border-primary-fixed-dim",
+    under_review:
+      "status-badge bg-amber-100 text-amber-700 border border-amber-200",
   };
   return (
     <span
@@ -55,10 +57,12 @@ const StatusBadge = ({ status }) => {
             ? "bg-green-500"
             : status === "scheduled"
               ? "bg-primary"
-              : "bg-on-surface-variant/40"
+              : status === "under_review"
+                ? "bg-amber-500"
+                : "bg-on-surface-variant/40"
         }`}
       />
-      {status}
+      {status.replace("_", " ")}
     </span>
   );
 };
@@ -69,20 +73,39 @@ const StatusSelect = ({ blog }) => {
   const { loading } = useSelector((s) => s.adminBlogs);
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const options = ["published", "draft", "scheduled"].filter(
+
+  const options = ["published", "draft", "scheduled", "under_review"].filter(
     (s) => s !== blog.status,
   );
 
   const handleStatusClick = (newStatus) => {
     setOpen(false);
+
     if (newStatus === "scheduled") {
       setIsModalOpen(true);
-    } else {
-      dispatch(updateBlogStatusAdmin({ blogId: blog._id, status: newStatus }))
-        .unwrap()
-        .then(() => toast.success(`Moved to ${newStatus}`))
-        .catch((e) => toast.error(e || "Failed to update status"));
+      return;
     }
+
+    if (newStatus === "under_review") {
+      const reason = window.prompt("Reason for flagging this post:");
+      if (reason === null) return;
+      dispatch(
+        updateBlogStatusAdmin({
+          blogId: blog._id,
+          status: "under_review",
+          adminNote: reason,
+        }),
+      )
+        .unwrap()
+        .then(() => toast.success("Moved to review"))
+        .catch((e) => toast.error(e || "Failed to update status"));
+      return;
+    }
+
+    dispatch(updateBlogStatusAdmin({ blogId: blog._id, status: newStatus }))
+      .unwrap()
+      .then(() => toast.success(`Moved to ${newStatus}`))
+      .catch((e) => toast.error(e || "Failed to update status"));
   };
 
   const handleScheduleConfirm = (date) => {
@@ -118,22 +141,20 @@ const StatusSelect = ({ blog }) => {
               className="fixed inset-0 z-10"
               onClick={() => setOpen(false)}
             />
-            <div className="absolute left-0 bottom-full mb-1 z-20 bg-white border border-black/5 rounded-2xl shadow-lavender py-1 min-w-32.5 flex flex-col overflow-visible">
-              {" "}
+            <div className="absolute left-0 bottom-full mb-1 z-20 bg-white border border-black/5 rounded-2xl shadow-lavender py-1 min-w-36 flex flex-col overflow-hidden">
               {options.map((o) => (
                 <button
                   key={o}
                   onClick={() => handleStatusClick(o)}
                   className="w-full text-left px-4 py-2 text-xs font-bold text-on-surface-variant hover:bg-surface-low transition-colors capitalize"
                 >
-                  → {o}
+                  → {o.replace("_", " ")}
                 </button>
               ))}
             </div>
           </>
         )}
       </div>
-      {/* FIX: ScheduleModal moved outside table via Portal (see ScheduleModal.jsx) */}
       <ScheduleModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -143,10 +164,30 @@ const StatusSelect = ({ blog }) => {
   );
 };
 
+// ─── Admin Note pill ──────────────────────────────────────────────────────────
+const AdminNotePill = ({ note }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!note) return null;
+  return (
+    <button
+      onClick={() => setExpanded((e) => !e)}
+      className="flex items-start gap-1.5 mt-1.5 text-left group max-w-xs"
+    >
+      <AlertCircle size={11} className="text-amber-500 shrink-0 mt-0.5" />
+      <span
+        className={`text-[10px] text-amber-700 leading-relaxed ${
+          expanded ? "" : "line-clamp-1"
+        }`}
+      >
+        {note}
+      </span>
+    </button>
+  );
+};
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 const BlogManagement = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const imgUrl = import.meta.env.VITE_API_IMG_URL;
 
   const {
@@ -161,17 +202,14 @@ const BlogManagement = () => {
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const isFiltered = !!(filters.search || filters.status || filters.category);
 
-  // FIX: Kept only the inner timeAgo — handles both past and future dates (scheduled posts)
   const timeAgo = (date) => {
     const diff = Date.now() - new Date(date).getTime();
     const d = Math.floor(Math.abs(diff) / 86400000);
-
     if (diff < 0) {
       if (d === 0) return "Coming up today";
       if (d === 1) return "Tomorrow";
       return `In ${d} days`;
     }
-
     if (d === 0) return "Today";
     if (d === 1) return "Yesterday";
     return `${d}d ago`;
@@ -195,20 +233,22 @@ const BlogManagement = () => {
   };
 
   const handleDelete = useCallback(
-    async (blogId, hard = false) => {
+    async (blogId) => {
+      const reason = window.prompt("Reason for flagging this post:");
+      if (reason === null) return;
+
       const result = await confirmAction(
-        "Delete this post?",
-        hard
-          ? "This is permanent and cannot be undone."
-          : "Post will be soft-deleted.",
+        "Flag this post?",
+        "It will be moved to 'Under Review' and hidden from the public.",
         "warning",
-        "Yes, delete it!",
+        "Yes, Flag it",
       );
       if (!result.isConfirmed) return;
-      dispatch(deleteBlogAdmin({ blogId, hard }))
+
+      dispatch(deleteBlogAdmin({ blogId, reason }))
         .unwrap()
-        .then(() => toast.success("Post deleted"))
-        .catch((e) => toast.error(e || "Delete failed"));
+        .then(() => toast.success("Post flagged for review"))
+        .catch((e) => toast.error(e || "Action failed"));
     },
     [dispatch],
   );
@@ -217,7 +257,7 @@ const BlogManagement = () => {
     () => [
       {
         id: "cover",
-        header: "", // FIX: removed "ProfilePic" label
+        header: "",
         cell: ({ row }) => (
           <div className="flex items-center justify-center">
             {row.original.coverImage ? (
@@ -274,13 +314,17 @@ const BlogManagement = () => {
         header: "Status",
         accessorKey: "status",
         cell: ({ row }) => (
-          <div className="flex flex-col items-center gap-1.5">
+          <div className="flex flex-col items-start gap-1">
             <StatusSelect blog={row.original} />
+            {/* ← Show adminNote under status badge */}
+            {row.original.status === "under_review" &&
+              row.original.adminNote && (
+                <AdminNotePill note={row.original.adminNote} />
+              )}
             {row.original.status === "scheduled" &&
               row.original.scheduledFor && (
                 <div className="flex items-center gap-1 text-[9px] font-bold text-primary px-2 py-0.5 bg-primary-fixed rounded-md animate-pulse border border-primary/10">
                   <Calendar size={10} />
-                  {/* FIX: toLocaleString instead of toLocaleDateString for reliable time display */}
                   {new Date(row.original.scheduledFor).toLocaleString([], {
                     month: "short",
                     day: "numeric",
@@ -329,7 +373,7 @@ const BlogManagement = () => {
         ),
       },
     ],
-    [imgUrl, handleDelete, timeAgo], // FIX: added timeAgo to deps
+    [imgUrl, handleDelete, timeAgo],
   );
 
   const table = useReactTable({
@@ -368,10 +412,11 @@ const BlogManagement = () => {
 
       <div className="table-container flex flex-col flex-1">
         <div className="px-6 py-4 border-b border-surface-highest/50 space-y-4">
-          {/* Quick Filter Tabs */}
+          {/* ── Filter Tabs — Deleted removed ── */}
           <div className="flex gap-1.5 bg-surface-low p-1 rounded-2xl w-fit border border-surface-highest/50">
             {[
               { label: "All", value: "" },
+              { label: "Review", value: "under_review" },
               { label: "Scheduled", value: "scheduled" },
               { label: "Published", value: "published" },
               { label: "Draft", value: "draft" },

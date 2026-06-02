@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema(
         return this.authProvider === "local";
       },
       unique: true,
-      sparse:true,
+      sparse: true,
       minlength: 3,
       maxlength: 12,
     },
@@ -44,10 +44,10 @@ const UserSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    authProvider: {
-      type: String,
+    authProviders: {
+      type: [String],
       enum: ["local", "google"],
-      default: "local",
+      default: ["local"],
     },
     refreshTokens: [
       {

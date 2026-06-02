@@ -10,7 +10,10 @@ import {
   LayoutGrid,
   ChevronDown,
 } from "lucide-react";
-import { isLoggedIn, selectCurrentUser } from "../../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectCurrentUser,
+} from "../../redux/selectors/authSelectors";
 import {
   getAllBlogs,
   getBlogsByUser,
@@ -18,7 +21,6 @@ import {
 } from "../../redux/thunks/blogThunks";
 import {
   setQuery,
-  resetBlogs,
   toggleCategory,
   clearCategories,
   clearUserSearch,
@@ -69,19 +71,24 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
     activeTab = "all",
   } = useSelector((state) => state.blog);
 
-  const isAuthenticated = useSelector(isLoggedIn); // 👈 checks accessToken, not user
+  const isAuthenticated = useSelector(isLoggedIn); 
   const user = useSelector(selectCurrentUser);
   const [showAllChips, setShowAllChips] = useState(false);
-
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const selectedCategories = query.categories || [];
   const searchInput = query.search || "";
 
   const { ref, inView } = useInView({ threshold: 0, rootMargin: "200px" });
 
   const data = mode === "user" ? userBlogs : blogs;
-  const isInitialLoading = loading && query.page === 1 && data.length === 0;
-  const isFiltering = loading && query.page === 1 && data.length > 0;
-  const isLoadingMore = loading && query.page > 1;
+  
+  const isInitialLoading =
+    loading && query.page === 1 && (data.length === 0 || isTransitioning);
+  const isFiltering =
+    (loading && query.page === 1 && data.length > 0) ||
+    (isTransitioning && data.length > 0);
+  
+    const isLoadingMore = loading && query.page > 1;
 
   const showBlogs = activeTab === "all" || activeTab === "blogs";
   const showAccounts = activeTab === "all" || activeTab === "accounts";
@@ -92,19 +99,28 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
 
   // Debounced fetch — fires on search, tab, or category change
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (showBlogs) {
-        dispatch(resetBlogs());
-        dispatch(getAllBlogs());
-      }
-      if (showAccounts) {
-        dispatch(clearUserSearch());
-        if (searchInput.trim()) dispatch(searchUsers({ q: searchInput }));
+    const t = setTimeout(async () => {
+      setIsTransitioning(true);
+
+      try {
+        if (showBlogs) {
+          await dispatch(getAllBlogs()).unwrap();
+        }
+
+        if (showAccounts) {
+          dispatch(clearUserSearch());
+
+          if (searchInput.trim()) {
+            await dispatch(searchUsers({ q: searchInput })).unwrap();
+          }
+        }
+      } finally {
+        setIsTransitioning(false);
       }
     }, 600);
+
     return () => clearTimeout(t);
   }, [query.search, activeTab, JSON.stringify(query.categories)]);
-
   // Infinite scroll — load next page
   useEffect(() => {
     if (
@@ -120,8 +136,10 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
 
   // Fetch when page increments
   useEffect(() => {
-    if (query.page > 1 && !loading && showBlogs) dispatch(getAllBlogs());
-  }, [query.page]);
+    if (query.page > 1 && !loading && showBlogs) {
+      dispatch(getAllBlogs());
+    }
+  }, [query.page, activeTab, JSON.stringify(query.categories), query.search]);
 
   // Tab change — search stays intact
   const handleTabChange = (tab) => dispatch(setActiveTab(tab));
@@ -150,12 +168,21 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40"
                 size={18}
               />
+
               <input
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search blogs or accounts..."
                 className="input-editorial pl-11 pr-10"
               />
+
+              {/* ✅ ADD THIS HERE */}
+              {isTransitioning && searchInput && (
+                <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                  <div className="h-4 w-4 rounded-full border border-primary/20 border-t-primary animate-spin" />
+                </div>
+              )}
+
               {searchInput && (
                 <button
                   onClick={() => handleSearchChange("")}
@@ -315,49 +342,55 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
               </h4>
             )}
             {isFiltering && (
-              <div className="absolute inset-0 backdrop-blur-[2px] bg-white/30 flex items-center justify-center z-10">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+              <div className="absolute inset-x-0 top-0 z-20 px-2">
+                <div className="loading-bar-editorial">
+                  <div className="loading-bar-progress" />
+                </div>
               </div>
             )}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {(mode === "featured" ? data.slice(0, propLimit) : data).map(
-                (item) => (
-                  <Link
-                    key={item._id}
-                    to={`/blog/${item.slug}`}
-                    onClick={(e) => {
-                      if (!isAuthenticated) {
-                        e.preventDefault();
-                        navigate("/login");
-                      }
-                    }}
-                    className="group block"
-                  >
-                    <div className="overflow-hidden rounded-2xl mb-3 h-52 bg-surface-low">
-                      <img
-                        src={`${import.meta.env.VITE_API_IMG_URL}/${item.coverImage}`}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        alt={item.title}
-                      />
-                    </div>
-                    {item.category && (
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
-                        {item.category}
-                      </span>
-                    )}
-                    <h3 className="font-display font-black text-on-surface mt-1 group-hover:text-primary transition-colors line-clamp-2">
-                      {item.title}
-                    </h3>
-                    <p className="text-sm text-on-surface-variant opacity-70 line-clamp-2 mt-1">
-                      {item.description}
-                    </p>
-                    <div className="flex justify-between text-xs text-on-surface-variant/50 mt-2">
-                      <span>@{getAuthor(item)}</span>
-                      <span>{formatDate(item.createdAt)}</span>
-                    </div>
-                  </Link>
-                ),
-              )}
+              {isInitialLoading || isTransitioning
+                ? Array.from({ length: 6 }).map((_, i) => (
+                    <BlogSkeleton key={i} />
+                  ))
+                : (mode === "featured" ? data.slice(0, propLimit) : data).map(
+                    (item) => (
+                      <Link
+                        key={item._id}
+                        to={`/blog/${item.slug}`}
+                        onClick={(e) => {
+                          if (!isAuthenticated) {
+                            e.preventDefault();
+                            navigate("/login");
+                          }
+                        }}
+                        className="group block"
+                      >
+                        <div className="overflow-hidden rounded-2xl mb-3 h-52 bg-surface-low">
+                          <img
+                            src={`${import.meta.env.VITE_API_IMG_URL}/${item.coverImage}`}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            alt={item.title}
+                          />
+                        </div>
+                        {item.category && (
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60">
+                            {item.category}
+                          </span>
+                        )}
+                        <h3 className="font-display font-black text-on-surface mt-1 group-hover:text-primary transition-colors line-clamp-2">
+                          {item.title}
+                        </h3>
+                        <p className="text-sm text-on-surface-variant opacity-70 line-clamp-2 mt-1">
+                          {item.description}
+                        </p>
+                        <div className="flex justify-between text-xs text-on-surface-variant/50 mt-2">
+                          <span>@{getAuthor(item)}</span>
+                          <span>{formatDate(item.createdAt)}</span>
+                        </div>
+                      </Link>
+                    ),
+                  )}
             </div>
             {!loading && data.length === 0 && (
               <div className="text-center py-20 font-display italic text-2xl text-on-surface-variant/30">
@@ -395,6 +428,35 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
     </div>
   );
 };
+const BlogSkeleton = () => (
+  <div className="animate-in fade-in duration-300">
+    <div className="relative h-52 rounded-2xl skeleton-editorial mb-3">
+      <div className="skeleton-shimmer" />
+    </div>
+
+    <div className="relative h-3 w-20 rounded-full skeleton-editorial mb-3">
+      <div className="skeleton-shimmer" />
+    </div>
+
+    <div className="relative h-7 w-full rounded-xl skeleton-editorial mb-2">
+      <div className="skeleton-shimmer" />
+    </div>
+
+    <div className="relative h-4 w-4/5 rounded-xl skeleton-editorial mb-4">
+      <div className="skeleton-shimmer" />
+    </div>
+
+    <div className="flex justify-between">
+      <div className="relative h-3 w-16 rounded-full skeleton-editorial">
+        <div className="skeleton-shimmer" />
+      </div>
+
+      <div className="relative h-3 w-20 rounded-full skeleton-editorial">
+        <div className="skeleton-shimmer" />
+      </div>
+    </div>
+  </div>
+);
 
 const Chip = ({ label, active, onClick, hideX = false }) => (
   <button
@@ -413,16 +475,21 @@ const Chip = ({ label, active, onClick, hideX = false }) => (
 const TabButton = ({ active, onClick, icon, label }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-5 pb-3 text-xs font-black uppercase tracking-widest transition-all relative ${
+    className={`group relative flex items-center gap-2 px-5 pb-3 text-xs font-black uppercase tracking-widest transition-all ${
       active
         ? "text-on-surface"
         : "text-on-surface-variant/40 hover:text-on-surface-variant"
     }`}
   >
-    {icon} {label}
-    {active && (
-      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-full" />
-    )}
+    <span
+      className={`absolute inset-0 rounded-xl bg-primary/5 transition-all duration-300 ${
+        active ? "opacity-100 scale-100" : "opacity-0 scale-90"
+      }`}
+    />
+
+    <span className="relative z-10 flex items-center gap-2">
+      {icon} {label}
+    </span>
   </button>
 );
 

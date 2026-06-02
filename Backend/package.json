@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -25,6 +26,10 @@
     "otp-generator": "^4.0.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
-    "slugify": "^1.6.9"
+    "sanitize-html": "^2.17.3",
+    "slugify": "^1.6.9",
+    "stripe": "^22.1.1",
+    "ua-parser-js": "^2.0.9",
+    "winston": "^3.19.0"
   }
 }

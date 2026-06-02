@@ -1,216 +1,541 @@
-const brandPrimary = "#6a5188"; // --color-primary
-const brandSurface = "#faf9ff"; // --color-surface
-const brandText = "#261e35"; // --color-on-surface
-const brandTextSecondary = "#6b637a"; // --color-on-surface-variant
-const brandBorder = "rgba(106, 81, 136, 0.1)"; // primary/10
+const brand = {
+  primary: "#6a5188",
+  primaryContainer: "#8e74ae",
+  primaryFixed: "#f3ebff",
 
-const wrapLayout = (title, content) => `
+  surface: "#faf9ff",
+  surfaceLow: "#f6f2ff",
+  surfaceHigh: "#f0eaff",
+  surfaceHighest: "#e9e2f8",
+
+  text: "#261e35",
+  textSecondary: "#6b637a",
+
+  success: "#16a34a",
+  danger: "#b91c1c",
+
+  border: "#ece7f4",
+
+  shadow:
+    "0px 10px 30px rgba(106,81,136,0.06), 0px 4px 12px rgba(106,81,136,0.03)",
+};
+
+const wrapLayout = ({ headerContent, bodyContent }) => `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <style>
+<meta charset="UTF-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
+<title>Wavelog</title>
+
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 32px 16px;
+    background: ${brand.surface};
+    font-family: "Times New Roman", Times, serif;
+    color: ${brand.text};
+    -webkit-font-smoothing: antialiased;
+  }
+
+  table {
+    border-spacing: 0;
+    border-collapse: collapse;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
+  }
+
+  .main-card {
+    background: #ffffff;
+    border-radius: 36px;
+    border: 1px solid ${brand.border};
+    box-shadow: ${brand.shadow};
+    overflow: hidden;
+  }
+
+  .hero {
+    padding: 52px 42px 24px;
+    text-align: center;
+    background: linear-gradient(
+      180deg,
+      #ffffff 0%,
+      ${brand.surfaceLow} 100%
+    );
+  }
+
+  .logo-wrap {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .logo {
+    display: inline-block;
+    padding: 12px 24px;
+    background: ${brand.primaryFixed};
+    border-radius: 999px;
+    border: 1px solid ${brand.border};
+
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: -0.02em;
+    color: ${brand.primary};
+  }
+
+  .logo span {
+    color: ${brand.text};
+    font-style: italic;
+  }
+
+  h1 {
+    margin: 0 0 18px;
+    font-size: 34px;
+    line-height: 1.15;
+    color: ${brand.text};
+    letter-spacing: -0.03em;
+  }
+
+  .subtitle {
+    margin: 0 auto;
+    max-width: 460px;
+
+    font-size: 17px;
+    line-height: 1.8;
+    color: ${brand.textSecondary};
+  }
+
+  .content {
+    padding: 10px 42px 50px;
+  }
+
+  .section-card {
+    background: ${brand.surfaceLow};
+
+    border: 1px solid ${brand.border};
+    border-radius: 30px;
+
+    padding: 32px 28px;
+  }
+
+  .otp-wrapper {
+    margin-top: 10px;
+    margin-bottom: 8px;
+  }
+
+  .otp-grid {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .otp-grid td {
+    padding: 0 6px;
+  }
+
+  .otp-box {
+    height: 68px;
+    background: #ffffff;
+    border: 1px solid ${brand.border};
+
+    border-radius: 22px;
+
+    text-align: center;
+    vertical-align: middle;
+
+    font-size: 28px;
+    font-weight: bold;
+    color: ${brand.primary};
+
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.9),
+      0 4px 10px rgba(106,81,136,0.04);
+  }
+
+  .helper {
+    margin-top: 18px;
+    text-align: center;
+    color: ${brand.textSecondary};
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .btn-wrap {
+    text-align: center;
+    margin-top: 34px;
+  }
+
+  .btn {
+    display: inline-block;
+
+    width: 100%;
+    max-width: 220px;
+
+    background: ${brand.primary};
+
+    color: #ffffff !important;
+    text-decoration: none;
+
+    padding: 16px 34px;
+    border-radius: 999px;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    box-shadow:
+      0 10px 24px rgba(106,81,136,0.18);
+  }
+
+  .icon-circle {
+    width: 78px;
+    height: 78px;
+
+    border-radius: 50%;
+
+    background: ${brand.primaryFixed};
+
+    border: 1px solid ${brand.border};
+
+    text-align: center;
+    line-height: 78px;
+
+    font-size: 34px;
+    color: ${brand.primary};
+
+    margin: 0 auto 24px;
+
+    box-shadow:
+      0 10px 20px rgba(106,81,136,0.08);
+  }
+
+  .warning-box {
+    margin-top: 24px;
+
+    padding: 18px 20px;
+
+    background: #fff5f5;
+
+    border: 1px solid #f5c2c7;
+
+    border-radius: 20px;
+
+    color: ${brand.danger};
+
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .footer {
+    padding: 32px 30px 40px;
+
+    text-align: center;
+
+    color: ${brand.textSecondary};
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .footer-divider {
+    width: 100%;
+    height: 1px;
+
+    background: ${brand.surfaceHighest};
+
+    margin-bottom: 22px;
+  }
+
+  @media screen and (max-width: 640px) {
     body {
-      background-color: ${brandSurface};
-      margin: 0;
-      padding: 40px 15px;
-      font-family: "Times New Roman", Times, serif;
-      color: ${brandText};
-      -webkit-font-smoothing: antialiased;
+      padding: 14px;
     }
 
-    .wrapper {
-      max-width: 500px;
-      margin: 0 auto;
-      background: #ffffff;
-      border-radius: 32px;
-      padding: 48px 40px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      box-shadow: 0px 10px 30px rgba(106, 81, 136, 0.06);
+    .hero {
+      padding: 40px 24px 20px;
     }
 
-    .logo {
-      text-align: center;
+    .content {
+      padding: 10px 20px 30px;
+    }
+
+    .section-card {
+      padding: 24px 18px;
+      border-radius: 24px;
+    }
+
+    h1 {
       font-size: 28px;
-      font-weight: bold;
-      letter-spacing: -0.02em;
-      margin-bottom: 36px;
-      color: ${brandPrimary};
-      text-transform: lowercase;
     }
 
-    .logo span {
-      font-style: italic;
-      color: ${brandText};
-    }
-
-    h2 {
-      font-size: 24px;
-      font-weight: 700;
-      text-align: center;
-      margin: 0 0 16px;
-      color: ${brandText};
-    }
-
-    p {
-      color: ${brandTextSecondary};
-      line-height: 1.6;
-      text-align: center;
-      margin: 0 0 20px;
-      font-size: 16px;
-    }
-
-    .otp-grid {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 32px 0;
+    .subtitle {
+      font-size: 15px;
     }
 
     .otp-box {
-      width: 45px;
-      height: 55px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: ${brandSurface};
-      border: 1px solid ${brandBorder};
-      border-radius: 12px;
-      font-size: 24px;
-      font-weight: bold;
-      color: ${brandPrimary};
+      height: 58px;
+      font-size: 22px;
+      border-radius: 18px;
     }
 
     .btn {
-      display: block;
-      text-align: center;
-      padding: 16px 32px;
-      border-radius: 50px;
-      font-weight: bold;
-      text-decoration: none;
-      background: ${brandPrimary};
-      color: #ffffff !important;
-      margin: 30px auto;
-      max-width: 200px;
+      max-width: 100%;
     }
-
-    .checkmark-circle {
-      width: 60px;
-      height: 60px;
-      background-color: #f3ebff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 24px;
-      color: ${brandPrimary};
-      font-size: 30px;
-    }
-
-    .footer {
-      margin-top: 40px;
-      padding-top: 24px;
-      border-top: 1px solid ${brandSurface};
-      text-align: center;
-      font-size: 13px;
-      color: ${brandTextSecondary};
-      font-style: italic;
-    }
-  </style>
+  }
+</style>
 </head>
 
 <body>
-  <div class="wrapper">
-    <div class="logo">wave<span>log</span></div>
-    ${content}
-    <div class="footer">
-      Sent securely by Wavelog Editorial Team.<br/>
-      Please do not reply to this automated email.
+
+  <div class="container">
+
+    <div class="main-card">
+
+      <div class="hero">
+
+        <div class="logo-wrap">
+          <div class="logo">
+            wave<span>log</span>
+          </div>
+        </div>
+
+        ${headerContent}
+
+      </div>
+
+      <div class="content">
+        ${bodyContent}
+      </div>
+
+      <div class="footer">
+
+        <div class="footer-divider"></div>
+
+        Sent securely by the Wavelog Editorial Team.
+        <br />
+        Please do not reply to this automated email.
+
+      </div>
+
     </div>
+
   </div>
+
 </body>
 </html>
 `;
 
 const renderOTPBoxes = (otp) => {
-  const digits = otp.toString().split('');
+  const digits = otp.toString().split("");
+
   return `
-    <div class="otp-grid">
-      ${digits.map(digit => `<div class="otp-box">${digit}</div>`).join('')}
+    <div class="otp-wrapper">
+
+      <table
+        class="otp-grid"
+        role="presentation"
+      >
+        <tr>
+
+          ${digits
+            .map(
+              (digit) => `
+                <td>
+                  <div class="otp-box">
+                    ${digit}
+                  </div>
+                </td>
+              `,
+            )
+            .join("")}
+
+        </tr>
+      </table>
+
     </div>
   `;
 };
 
+const buildTemplate = ({ title, subtitle, body }) => {
+  return wrapLayout({
+    headerContent: `
+      <h1>${title}</h1>
+
+      <p class="subtitle">
+        ${subtitle}
+      </p>
+    `,
+
+    bodyContent: body,
+  });
+};
+
 const emailTemplates = {
-  // 1. Verification & Resend OTP
   verificationOTP: (otp) => ({
     subject: "🔐 Verify your Wavelog account",
-    html: wrapLayout(
-      "Verify Account",
-      `
-      <h2>Welcome to the journal.</h2>
-      <p>Before you begin your first draft, please verify your identity using the authorization code below.</p>
-      ${renderOTPBoxes(otp)}
-      <p style="font-size: 14px;">This code is valid for 10 minutes.</p>
-    `,
-    ),
+
+    html: buildTemplate({
+      title: "Verify Your Identity",
+
+      subtitle:
+        "Before entering your editorial workspace, please confirm your identity using the secure authorization code below.",
+
+      body: `
+        <div class="section-card">
+
+          ${renderOTPBoxes(otp)}
+
+          <div class="helper">
+            This verification code will expire in 10 minutes.
+          </div>
+
+        </div>
+      `,
+    }),
   }),
 
-  // 2. Verification Success (Account Fully Activated)
   verificationSuccess: (username) => ({
     subject: "✅ Identity Confirmed | Wavelog",
-    html: wrapLayout(
-      "Verification Success",
-      `
-      <div class="checkmark-circle">✓</div>
-      <h2>Identity Confirmed.</h2>
-      <p>Thank you, ${username}. Your email address has been successfully verified. Your editorial space is now fully active.</p>
-      <a href="${process.env.FRONTEND_URL}/login" class="btn">Start Writing</a>
-      <p style="font-size: 14px;">You can now access your dashboard and start sharing your stories with the world.</p>
-    `,
-    ),
+
+    html: buildTemplate({
+      title: "Identity Confirmed",
+
+      subtitle: "Your editorial space is now active and ready for publishing.",
+
+      body: `
+        <div class="section-card">
+
+          <div class="icon-circle">
+            ✓
+          </div>
+
+          <p
+            style="
+              text-align:center;
+              font-size:17px;
+              line-height:1.9;
+              color:${brand.textSecondary};
+              margin:0;
+            "
+          >
+            Thank you,
+            <strong style="color:${brand.text}">
+              ${username}
+            </strong>.
+
+            Your email address has been successfully verified.
+          </p>
+
+          <div class="btn-wrap">
+
+            <a
+              href="${process.env.FRONTEND_URL}/login"
+              class="btn"
+            >
+              Enter Workspace
+            </a>
+
+          </div>
+
+        </div>
+      `,
+    }),
   }),
 
-  // 3. Welcome Email
   welcome: (username) => ({
-    subject: "🚀 The journey begins on Wavelog",
-    html: wrapLayout(
-      "Welcome",
-      `
-      <h2>Greetings, ${username}.</h2>
-      <p>Your space is ready. Wavelog is where your stories find their rhythm and your ideas find their home.</p>
-      <a href="${process.env.FRONTEND_URL}/login" class="btn">Enter Workspace</a>
-      <p>We look forward to seeing what you create.</p>
-    `,
-    ),
+    subject: "🚀 Welcome to Wavelog",
+
+    html: buildTemplate({
+      title: `Greetings, ${username}.`,
+
+      subtitle:
+        "Your publishing environment is ready. Wavelog is where stories find rhythm and ideas become timeless.",
+
+      body: `
+        <div class="section-card">
+
+          <p
+            style="
+              text-align:center;
+              color:${brand.textSecondary};
+              line-height:1.9;
+              font-size:16px;
+              margin:0;
+            "
+          >
+            Start writing, publish your thoughts,
+            and build your own editorial presence.
+          </p>
+
+          <div class="btn-wrap">
+
+            <a
+              href="${process.env.FRONTEND_URL}/login"
+              class="btn"
+            >
+              Start Writing
+            </a>
+
+          </div>
+
+        </div>
+      `,
+    }),
   }),
 
-  // 4. Password Reset OTP
   passwordResetOTP: (otp) => ({
     subject: "🔑 Reset your Wavelog access",
-    html: wrapLayout(
-      "Reset Password",
-      `
-      <h2>Account Recovery</h2>
-      <p>A password reset was requested. Use the individual digits below to authorize the change:</p>
-      ${renderOTPBoxes(otp)}
-      <p>If you did not request this, please secure your account immediately.</p>
-    `,
-    ),
+
+    html: buildTemplate({
+      title: "Password Recovery",
+
+      subtitle:
+        "We received a request to reset your password. Use the secure verification code below to continue.",
+
+      body: `
+        <div class="section-card">
+
+          ${renderOTPBoxes(otp)}
+
+          <div class="warning-box">
+            If you did not request a password reset,
+            we recommend securing your account immediately.
+          </div>
+
+        </div>
+      `,
+    }),
   }),
 
-  // 5. Change Password OTP
   changePasswordOTP: (otp) => ({
-    subject: "🛡️ Security Alert: Password Update",
-    html: wrapLayout(
-      "Change Password",
-      `
-      <h2>Confirm Security Change</h2>
-      <p>To finalize your password update, please enter the following code:</p>
-      ${renderOTPBoxes(otp)}
-      <p style="color: #b91c1c;">Warning: Only enter this code if you are currently on the Wavelog settings page.</p>
-    `,
-    ),
+    subject: "🛡️ Confirm Security Change",
+
+    html: buildTemplate({
+      title: "Confirm Password Update",
+
+      subtitle:
+        "Use the verification code below to complete your password change request.",
+
+      body: `
+        <div class="section-card">
+
+          ${renderOTPBoxes(otp)}
+
+          <div class="warning-box">
+            Only enter this code if you are currently
+            updating your password from the Wavelog settings page.
+          </div>
+
+        </div>
+      `,
+    }),
   }),
 };
 

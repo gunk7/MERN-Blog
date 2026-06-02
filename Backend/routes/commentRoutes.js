@@ -8,7 +8,7 @@ const {
   querySchema,
   updateCommentValidation,
   likeCommentValidation,
-} = require("../validations/validation");
+} = require("../validations/commentValidation");
 
 // Create a new comment
 route.post(
