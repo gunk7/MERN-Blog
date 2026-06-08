@@ -6,7 +6,7 @@ export const getProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       // No need to pass headers here anymore!
-      const response = await API.get("/user/");
+      const response = await API.get("/api/user/");
 
       // Extracting data based on your controller's response structure
       return response.data?.data || null;
@@ -20,7 +20,7 @@ export const updateProfile = createAsyncThunk(
   "user/updateProfile",
   async ({ userId, userData }, { rejectWithValue }) => {
     try {
-      const response = await API.put(`/user/${userId}`, userData);
+      const response = await API.put(`/api/user/${userId}`, userData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -32,7 +32,7 @@ export const getPublicProfile = createAsyncThunk(
   "user/getPublicProfile",
   async (username, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/user/profile/${username}`);
+      const response = await API.get(`/api/user/profile/${username}`);
       console.log(response);
       return response.data.data;
     } catch (error) {
@@ -45,7 +45,7 @@ export const followUser = createAsyncThunk(
   "user/followUser",
   async (followingId, { rejectWithValue }) => {
     try {
-      const { data } = await API.post(`/follow/${followingId}`);
+      const { data } = await API.post(`/api/follow/${followingId}`);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed to follow");
@@ -59,7 +59,7 @@ export const unfollowUser = createAsyncThunk(
   "user/unfollowUser",
   async (followingId, { rejectWithValue }) => {
     try {
-      const { data } = await API.delete(`/follow/${followingId}`);
+      const { data } = await API.delete(`/api/follow/${followingId}`);
       return data;
     } catch (err) {
       return rejectWithValue(

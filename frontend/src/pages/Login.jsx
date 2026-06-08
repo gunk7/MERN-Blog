@@ -39,9 +39,7 @@ const Login = () => {
         toast.success(`Welcome back, ${res.user?.username || "User"}!`);
         resetForm();
 
-        if (res.user?.role === "admin") {
-          navigate("/dashboard");
-        } else if (!res.user?.hasPlan) {
+        if (!res.user?.hasPlan) {
           navigate("/onboarding/plan"); // ← new users go here
         } else {
           navigate("/profile"); // ← existing users go here

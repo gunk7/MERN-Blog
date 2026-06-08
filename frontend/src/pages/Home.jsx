@@ -15,11 +15,7 @@ const Home = () => {
   const user = useSelector(selectCurrentUser);
 
   const handleRedirect = () => {
-    if (user?.role === "admin") {
-      navigate("/dashboard");
-    } else {
-      navigate("/profile");
-    }
+    navigate("/profile");
   };
 
   return (
@@ -67,8 +63,7 @@ const Home = () => {
                   className="btn-editorial w-auto! px-10 py-5 rounded-2xl shadow-none hover:shadow-lavender"
                   onClick={handleRedirect}
                 >
-                  Go to {user?.role === "admin" ? "Dashboard" : "Profile"}{" "}
-                  <MoveRight size={20} />
+                  Go to Profile <MoveRight size={20} />
                 </button>
               ) : (
                 <div className="flex flex-wrap gap-4">

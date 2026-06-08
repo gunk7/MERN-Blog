@@ -5,7 +5,7 @@ export const createBlog = createAsyncThunk(
   "blog/createBlog",
   async (FormData, { rejectedWithValue }) => {
     try {
-      const response = await API.post("/blogs/", FormData);
+      const response = await API.post("/api/blogs/", FormData);
       return response.data;
     } catch (error) {
       return rejectedWithValue(
@@ -36,7 +36,7 @@ export const getAllBlogs = createAsyncThunk(
         ...params,
       };
 
-      const response = await API.get("/blogs", { params: finalParams });
+      const response = await API.get("/api/blogs", { params: finalParams });
       return {
         blogs: response.data.blogs,
         pagination: response.data.pagination,
@@ -53,7 +53,7 @@ export const searchUsers = createAsyncThunk(
   "blog/searchUsers",
   async ({ q, page = 1 }, { rejectWithValue }) => {
     try {
-      const response = await API.get("/user/search", {
+      const response = await API.get("/api/user/search", {
         params: { q, page, limit: 10 },
       });
       console.log(response);
@@ -98,7 +98,7 @@ export const getBlogById = createAsyncThunk(
   "blogs/getById",
   async (id, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/blogs/id/${id}`);
+      const response = await API.get(`/api/blogs/id/${id}`);
       return response.data.data.blog;
     } catch (err) {
       return rejectWithValue(
@@ -112,7 +112,7 @@ export const getBlogBySlug = createAsyncThunk(
   "blogs/getBySlug",
   async (slug, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/blogs/slug/${slug}`);
+      const response = await API.get(`/api/blogs/slug/${slug}`);
       return response.data.data.blog;
     } catch (err) {
       return rejectWithValue(
@@ -126,7 +126,7 @@ export const getBlogsByUser = createAsyncThunk(
   "blogs/getByUser",
   async (userId, { rejectWithValue }) => {
     try {
-      const { data } = await API.get(`/blogs/user/${userId}`);
+      const { data } = await API.get(`/api/blogs/user/${userId}`);
       return data.data.blogs;
     } catch (err) {
       return rejectWithValue(
@@ -140,7 +140,7 @@ export const getMyBlogs = createAsyncThunk(
   "blog/getMyBlogs",
   async (_, { rejectedWithValue }) => {
     try {
-      const response = await API.get("/blogs/my-blogs");
+      const response = await API.get("/api/blogs/my-blogs");
       return response.data.data.blogs;
     } catch (error) {
       return rejectedWithValue(
@@ -155,7 +155,7 @@ export const updateBlog = createAsyncThunk(
   "blog/updateBlog",
   async ({ id, formData }, { rejectedWithValue }) => {
     try {
-      const response = await API.put(`/blogs/${id}`, formData);
+      const response = await API.put(`/api/blogs/${id}`, formData);
       return response.data.data.blog;
     } catch (error) {
       return rejectedWithValue(
@@ -170,7 +170,7 @@ export const deleteBlog = createAsyncThunk(
   "blog/deleteBlog",
   async (id, { rejectedWithValue }) => {
     try {
-      const response = await API.delete(`/blogs/${id}`);
+      const response = await API.delete(`/api/blogs/${id}`);
       return response.data;
     } catch (error) {
       return rejectedWithValue(
@@ -185,7 +185,7 @@ export const toggleBlog = createAsyncThunk(
   "blog/toggleBlog",
   async (id, { rejectedWithValue }) => {
     try {
-      const response = await API.post(`/blogs/like/${id}`);
+      const response = await API.post(`/api/blogs/like/${id}`);
       return response.data;
     } catch (error) {
       return rejectedWithValue(

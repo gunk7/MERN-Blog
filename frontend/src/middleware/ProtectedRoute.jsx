@@ -6,7 +6,7 @@ import {
 } from "../redux/selectors/authSelectors";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-const ProtectedRoute = ({ adminOnly = false }) => {
+const ProtectedRoute = () => {
   const isAuthenticated = useSelector(isLoggedIn);
   const authInitialized = useSelector(selectAuthInitialized);
   const location = useLocation();

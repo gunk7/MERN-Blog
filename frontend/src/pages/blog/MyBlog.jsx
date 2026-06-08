@@ -172,6 +172,7 @@ const MyBlogs = () => {
                     </div>
                   </div>
                 )}
+
                 {/* Engagement Mockup from Image */}
                 <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-6 text-on-surface-variant/40">

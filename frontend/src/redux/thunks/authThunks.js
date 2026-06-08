@@ -6,7 +6,7 @@ export const login = createAsyncThunk(
   "auth/login",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/login", values);
+      const res = await API.post("/api/auth/login", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -19,7 +19,7 @@ export const signup = createAsyncThunk(
   "auth/signup",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/signup", values);
+      const res = await API.post("/api/auth/signup", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -32,7 +32,7 @@ export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/verify", values);
+      const res = await API.post("/api/auth/verify", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -47,7 +47,7 @@ export const resendOtp = createAsyncThunk(
   "auth/resendOtp",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/resendOtp", values);
+      const res = await API.post("/api/auth/resendOtp", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -60,7 +60,7 @@ export const changePasswordReq = createAsyncThunk(
   "auth/changePasswordReq",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/change_password_request", values);
+      const res = await API.post("/api/auth/change_password_request", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -73,7 +73,7 @@ export const changePassword = createAsyncThunk(
   "auth/changePassword",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/change_password", values);
+      const res = await API.post("/api/auth/change_password", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -88,7 +88,7 @@ export const forgotPassword = createAsyncThunk(
   "auth/forgotPassword",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/forgot_password", values);
+      const res = await API.post("/api/auth/forgot_password", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -103,7 +103,7 @@ export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/reset_password", values);
+      const res = await API.post("/api/auth/reset_password", values);
       const inputdata = res?.data?.data || null;
       return inputdata;
     } catch (err) {
@@ -118,7 +118,7 @@ export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (logoutData, { dispatch, rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/logout", logoutData);
+      const res = await API.post("/api/auth/logout", logoutData);
       dispatch(logout());
       return res?.data;
     } catch (error) {

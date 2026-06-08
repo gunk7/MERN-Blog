@@ -5,7 +5,7 @@ export const createComment = createAsyncThunk(
   "comments/createComment",
   async ({ blogId, content, parentCommentId = null }, { rejectWithValue }) => {
     try {
-      const { data } = await API.post("/comments/", {
+      const { data } = await API.post("/api/comments/", {
         blogId,
         content,
         parentCommentId,
@@ -25,7 +25,7 @@ export const fetchComments = createAsyncThunk(
   "comments/fetchComments",
   async ({ blogId, page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
-      const { data } = await API.get(`/comments/blog/${blogId}`, {
+      const { data } = await API.get(`/api/comments/blog/${blogId}`, {
         params: { page, limit },
       });
 
@@ -43,7 +43,7 @@ export const fetchReplies = createAsyncThunk(
   "comments/fetchReplies",
   async ({ commentId, page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
-      const { data } = await API.get(`/comments/replies/${commentId}`, {
+      const { data } = await API.get(`/api/comments/replies/${commentId}`, {
         params: { page, limit },
       });
 
@@ -61,7 +61,7 @@ export const updateComment = createAsyncThunk(
   "comments/updateComment",
   async ({ commentId, content }, { rejectWithValue }) => {
     try {
-      const { data } = await API.put(`/comments/${commentId}`, {
+      const { data } = await API.put(`/api/comments/${commentId}`, {
         content,
       });
 
@@ -79,7 +79,7 @@ export const deleteComment = createAsyncThunk(
   "comments/deleteComment",
   async ({ commentId }, { rejectWithValue }) => {
     try {
-      await API.delete(`/comments/${commentId}`);
+      await API.delete(`/api/comments/${commentId}`);
 
       return { commentId };
     } catch (error) {
@@ -95,7 +95,7 @@ export const toggleLike = createAsyncThunk(
   "comments/toggleLike",
   async ({ commentId, isLiked }, { rejectWithValue }) => {
     try {
-      const { data } = await API.post(`/comments/like/${commentId}`);
+      const { data } = await API.post(`/api/comments/like/${commentId}`);
 
       return { commentId, ...data };
     } catch (error) {
