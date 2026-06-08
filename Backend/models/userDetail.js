@@ -6,6 +6,10 @@ const UserDetailsSchema = new mongoose.Schema(
       type: String,
       default: "uploads/images/profilePics/blank.jpg",
     },
+    profilePicPublicId: {
+      type: String,
+      default: null,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
@@ -15,22 +19,20 @@ const UserDetailsSchema = new mongoose.Schema(
 
     firstName: {
       type: String,
-      required: true,
+      //required: true,
     },
 
     lastName: {
       type: String,
-      required: true,
+      // required: true,
     },
 
     bio: {
       type: String,
-      required: [true, "Bio is Required"],
       max: 200,
     },
     dob: {
       type: Date,
-      required: [true, "Date of Birth is Required"],
       validate: {
         validator: (value) => value <= new Date(),
         message: "Date of Birth is invalid",
@@ -38,8 +40,7 @@ const UserDetailsSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      required: [true, "Gender is required"],
-      enum: ["male", "female", "other"],
+      enum: ["male", "female", "other", "prefer not to say"],
       lowercase: true,
       trim: true,
     },

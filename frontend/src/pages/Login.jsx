@@ -4,28 +4,25 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { LogIn, Mail, Lock } from "lucide-react";
-import { loginSchema } from "../validation/authSchemas";
+import { loginSchema } from "../validation/schemasValidation";
 import { login } from "../redux/thunks/authThunks";
-import {
-  isLoggedIn,
-  selectAuthLoading,
-  selectCurrentUser,
-} from "../redux/selectors/authSelectors";
+import { selectAuthLoading } from "../redux/selectors/authSelectors";
 import OtpModal from "../modals/OtpModal";
 import ForgotPassword from "../modals/ForgotPassword";
+import GoogleButton from "../components/GoogleButton";
 
 const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const access = useSelector(isLoggedIn);
   const loading = useSelector(selectAuthLoading);
-  const user = useSelector(selectCurrentUser);
 
   // --- Modal States ---
   const [openOtpModal, setOpenOtpModal] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [isForgotPwdOpen, setIsForgotPwdOpen] = useState(false);
-  useEffect(() => {
+  const [shouldAutoSend, setShouldAutoSend] = useState(false);
+
+  /*   useEffect(() => {
     if (access && user) {
       if (user.role === "admin") {
         navigate("/dashboard");
@@ -33,32 +30,22 @@ const Login = () => {
         navigate("/profile");
       }
     }
-  }, [access, user, navigate]);
-
-  const formik = useFormik({
+  }, [access, user, navigate]) */ const formik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: loginSchema,
     onSubmit: async (data, { resetForm }) => {
       try {
         const res = await dispatch(login(data)).unwrap();
-        toast.success(`Welcome back, ${res.user?.firstName || "User"}!`);
+        toast.success(`Welcome back, ${res.user?.username || "User"}!`);
         resetForm();
-        if (res.user?.role === "admin") {
-          navigate("/dashboard");
+
+        if (!res.user?.hasPlan) {
+          navigate("/onboarding/plan"); // ← new users go here
         } else {
-          navigate("/profile");
+          navigate("/profile"); // ← existing users go here
         }
       } catch (err) {
-        if (
-          err ===
-          "Email not verified. Please verify your email before logging in."
-        ) {
-          setUnverifiedEmail(data.email);
-          setOpenOtpModal(true);
-          toast.info("Verification required. We've opened the entry portal.");
-        } else {
-          toast.error(err || "Something went wrong");
-        }
+        // ...rest unchanged
       }
     },
   });
@@ -149,6 +136,15 @@ const Login = () => {
                 </>
               )}
             </button>
+            <div className="flex items-center gap-3 my-6 sm:my-8">
+              <hr className="flex-1 border-on-surface/10" />
+              <span className="text-xs text-on-surface-variant font-bold uppercase tracking-widest">
+                or
+              </span>
+              <hr className="flex-1 border-on-surface/10" />
+            </div>
+
+            <GoogleButton />
           </fieldset>
         </form>
 
@@ -170,6 +166,7 @@ const Login = () => {
       {openOtpModal && (
         <OtpModal
           email={unverifiedEmail}
+          shouldAutoSend={shouldAutoSend}
           onClose={() => setOpenOtpModal(false)}
         />
       )}

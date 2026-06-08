@@ -1,3 +1,25 @@
-﻿node_modules/
+﻿# Dependencies
+node_modules/
+
+# Environment
 .env
+
+# OS files
 .DS_Store
+
+# Lock files (only if you REALLY want to ignore them)
+package-lock.json
+
+# Uploads (important)
+Backend/uploads/
+Backend/script/
+
+
+# Optional (if you don't want images tracked)
+*.png
+# Logs
+Backend/logs/
+*.log
+
+# Logger file
+Backend/logger.js

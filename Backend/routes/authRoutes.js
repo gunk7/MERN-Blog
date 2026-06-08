@@ -2,9 +2,14 @@ const express = require("express");
 const route = express.Router();
 const authController = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
+
 route.post("/signup", authController.signup);
 route.post("/verify", authController.verifyAndCreateUser);
 route.post("/resendOtp", authController.resendOtp);
+
+route.get("/google", authController.googleAuth);
+route.get("/google/callback", authController.googleCallback);
+route.post("/refresh", authController.refresh);
 
 route.post("/login", authController.login);
 
@@ -16,4 +21,6 @@ route.post(
   authController.changePasswordReq,
 );
 route.post("/change_password", authMiddleware, authController.changePassword);
+
+route.post("/logout", authMiddleware, authController.logout);
 module.exports = route;

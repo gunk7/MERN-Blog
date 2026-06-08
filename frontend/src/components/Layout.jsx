@@ -1,26 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { LogOut, PenSquare, Search, Menu, X } from "lucide-react";
-import { logout } from "../redux/slice/authSlice";
+import { LogOut, PenSquare, Menu, X } from "lucide-react";
+// Import the thunk and selectors
+import { logoutUser } from "../redux/thunks/authThunks";
 import {
   selectCurrentUser,
   selectToken,
+  selectAuthLoading,
 } from "../redux/selectors/authSelectors";
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const access = useSelector(selectToken);
   const user = useSelector(selectCurrentUser);
+  const isLoading = useSelector(selectAuthLoading);
+  // Get refreshToken for backend revocation
+  const refreshToken = useSelector((state) => state.auth.refreshToken);
 
-  // States for Scroll and Mobile Menu
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // State for Logout Modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Scroll logic for hiding/showing navbar
+  const dashboardLink = user?.role === "admin" ? "/dashboard" : "/profile";
+  const dashboardLabel = user?.role === "admin" ? "Dashboard" : "Profile";
+
   useEffect(() => {
     const controlNavbar = () => {
       if (isMenuOpen) return;
@@ -37,15 +45,52 @@ const Layout = ({ children }) => {
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY, isMenuOpen]);
 
-  const handleLogout = () => {
-    dispatch(logout());
+  // Handle actual logout via thunk
+  const handleConfirmLogout = async (allDevices = false) => {
+    await dispatch(logoutUser({ refreshToken, allDevices }));
+    setShowLogoutModal(false);
     setIsMenuOpen(false);
     navigate("/login");
   };
 
   return (
     <div className="min-h-screen flex flex-col font-body bg-surface text-on-surface antialiased">
-      {/* --- RESPONSIVE HEADER --- */}
+      {/* --- LOGOUT MODAL --- */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl border border-primary/10">
+            <h3 className="text-xl font-black tracking-tight mb-2">
+              Confirm Logout
+            </h3>
+            <p className="text-on-surface-variant text-sm mb-6">
+              Are you sure you want to end your session, {user?.firstName}?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                disabled={isLoading}
+                onClick={() => handleConfirmLogout(false)}
+                className="bg-primary text-white py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:opacity-90 transition-all"
+              >
+                {isLoading ? "Processing..." : "Logout"}
+              </button>
+              <button
+                disabled={isLoading}
+                onClick={() => handleConfirmLogout(true)}
+                className="bg-surface-low text-primary py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all"
+              >
+                Logout all devices
+              </button>
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="text-on-surface-variant text-[10px] font-bold uppercase tracking-widest mt-2 hover:text-on-surface"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header
         className={`w-full bg-white/95 backdrop-blur-md border-b border-primary/10 fixed top-0 z-50 transition-transform duration-500 ease-editorial ${
           isVisible ? "translate-y-0" : "-translate-y-full"
@@ -53,7 +98,6 @@ const Layout = ({ children }) => {
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-12">
-            {/* Mobile Menu Toggle */}
             <button
               className="md:hidden p-1 text-on-surface hover:text-primary transition-colors"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -68,28 +112,36 @@ const Layout = ({ children }) => {
               Wavelog<span className="text-primary">.</span>
             </Link>
 
-            {/* Desktop Nav - Using v4 theme spacing and colors */}
             <nav className="hidden md:flex items-center gap-8 border-l border-primary/10 pl-10 text-[11px] font-bold uppercase tracking-[0.2em]">
               <Link to="/" className="hover:text-primary transition-colors">
                 Home
               </Link>
-             
+              <Link
+                to="/blogs"
+                className="hover:text-primary transition-colors"
+              >
+                Blogs
+              </Link>
               {access && (
-                <Link
-                  to="/dashboard"
-                  className="hover:text-primary transition-colors"
-                >
-                  Dashboard
-                </Link>
+                <>
+                  <Link
+                    to="/my-blogs"
+                    className="hover:text-primary transition-colors"
+                  >
+                    My Blogs
+                  </Link>
+                  <Link
+                    to={dashboardLink}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {dashboardLabel}
+                  </Link>
+                </>
               )}
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
-              <Search size={20} strokeWidth={1.5} />
-            </button>
-
             {access ? (
               <div className="flex items-center gap-2">
                 <Link
@@ -99,16 +151,19 @@ const Layout = ({ children }) => {
                   <PenSquare size={16} /> Write
                 </Link>
 
-                {/* User Pill */}
                 <div className="flex items-center gap-3 bg-surface border border-primary/5 p-1 rounded-full ml-1">
-                  <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider pl-3">
+                  <Link
+                    to={dashboardLink}
+                    className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider pl-3 hover:text-primary transition-colors"
+                  >
                     {user?.firstName}
-                  </span>
+                  </Link>
+                  {/* Updated trigger to open Modal */}
                   <button
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutModal(true)}
                     className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-on-surface-variant shadow-sm hover:text-rose-500 transition-colors"
                   >
-                    <LogOut size={14} />
+                    <LogOut size={16} />
                   </button>
                 </div>
               </div>
@@ -124,7 +179,7 @@ const Layout = ({ children }) => {
                   to="/signup"
                   className="bg-on-surface text-white px-5 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg hover:bg-primary transition-all active:scale-95"
                 >
-                  Join
+                  Signup
                 </Link>
               </div>
             )}
@@ -133,7 +188,7 @@ const Layout = ({ children }) => {
 
         {/* --- MOBILE OVERLAY MENU --- */}
         <div
-          className={`md:hidden absolute top-20 left-0 w-full bg-white border-b border-primary/10 transition-all duration-500 ease-editorial overflow-hidden ${isMenuOpen ? "max-h-screen border-b-primary/20" : "max-h-0"}`}
+          className={`md:hidden absolute top-20 left-0 w-full bg-white border-b border-primary/10 transition-all duration-500 ease-editorial overflow-hidden ${isMenuOpen ? "max-h-screen" : "max-h-0"}`}
         >
           <nav className="flex flex-col items-center gap-6 py-8 font-bold uppercase tracking-widest text-[11px]">
             <Link
@@ -143,34 +198,35 @@ const Layout = ({ children }) => {
             >
               Home
             </Link>
-            <Link
-              to="/trending"
-              onClick={() => setIsMenuOpen(false)}
-              className="hover:text-primary"
-            >
-              Trending
-            </Link>
             {access ? (
               <>
                 <Link
-                  to="/dashboard"
+                  to={dashboardLink}
                   onClick={() => setIsMenuOpen(false)}
                   className="hover:text-primary"
                 >
-                  Dashboard
+                  {dashboardLabel}
+                </Link>
+                <Link
+                  to="/my-blogs"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="hover:text-primary flex items-center gap-2"
+                >
+                  My Blogs
                 </Link>
                 <Link
                   to="/write"
                   onClick={() => setIsMenuOpen(false)}
-                  className="text-primary"
+                  className="text-primary flex items-center gap-2"
                 >
-                  Write Post
+                  <PenSquare size={14} /> Write Post
                 </Link>
+                {/* Updated trigger to open Modal */}
                 <button
-                  onClick={handleLogout}
-                  className="text-rose-500 pt-4 border-t border-primary/5 w-1/2 text-center"
+                  onClick={() => setShowLogoutModal(true)}
+                  className="text-rose-500 pt-4 border-t border-primary/5 w-1/2 flex justify-center"
                 >
-                  Logout
+                  <LogOut size={18} />
                 </button>
               </>
             ) : (
@@ -185,42 +241,24 @@ const Layout = ({ children }) => {
           </nav>
         </div>
       </header>
+      <div className="transition-all duration-300 ease-in-out ai-panel-shift">
+        <main className="grow pt-20">
+          <Outlet />
+        </main>
 
-      {/* --- CONTENT --- */}
-      <main className="grow container mx-auto max-w-4xl px-6 pt-32 pb-12">
-        {children}
-      </main>
-
-      {/* --- FOOTER --- */}
-      <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex flex-col items-center md:items-start gap-2">
-            <h2 className="text-2xl font-black tracking-tighter">
-              Wavelog<span className="text-primary">.</span>
-            </h2>
-            <p className="text-[10px] text-on-surface-variant italic font-body">
-              Where thoughts find their rhythm.
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center md:items-end gap-4">
-            <nav className="flex gap-6 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
-              <Link to="/about" className="hover:text-primary">
-                About
-              </Link>
-              <Link to="/privacy" className="hover:text-primary">
-                Privacy
-              </Link>
-              <Link to="/terms" className="hover:text-primary">
-                Terms
-              </Link>
-            </nav>
-            <div className="text-on-surface-variant/40 text-[9px] font-bold uppercase tracking-[0.3em]">
-              © 2026 / Editorial Design System
+        <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <h2 className="text-2xl font-black tracking-tighter">
+                Wavelog<span className="text-primary">.</span>
+              </h2>
+              <p className="text-[10px] text-on-surface-variant italic font-body">
+                Where thoughts find their rhythm.
+              </p>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 };

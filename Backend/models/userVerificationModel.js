@@ -9,15 +9,11 @@ const userVerificationSchema = new mongoose.Schema(
       unique: true,
       minlength: 3,
       maxlength: 12,
-      trim: true,
-      lowercase: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
-      trim: true,
-      lowercase: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
         "Please use a valid email address",
@@ -30,7 +26,6 @@ const userVerificationSchema = new mongoose.Schema(
       },
       minlength: 8,
       maxlength: 128,
-      
     },
     otp: {
       code: {
@@ -65,6 +60,8 @@ const userVerificationSchema = new mongoose.Schema(
 userVerificationSchema.index({ "otp.expiresAt": 1 }, { expireAfterSeconds: 0 });
 
 userVerificationSchema.pre("save", async function () {
+  if (this.username) this.username = this.username.toLowerCase().trim();
+  if (this.email) this.email = this.email.toLowerCase().trim();
   if (this.isModified("password")) {
     try {
       const salt = await bcrypt.genSalt(10);
@@ -74,7 +71,7 @@ userVerificationSchema.pre("save", async function () {
     }
   }
   if (this.isModified("otp.code") && this.otp?.code) {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(9);
     this.otp.code = await bcrypt.hash(this.otp.code, salt);
   }
 });

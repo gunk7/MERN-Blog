@@ -1,11 +1,11 @@
 const user = require("../models/userModel");
-const { verifyToken } = require("../utils/jwt");
+const { verifyAccessToken } = require("../utils/jwt");
 
 exports.authMiddleware = async (req, res, next) => {
   let token;
   const headerAuth = req.headers.authorization;
 
-  if (!headerAuth && !headerAuth.startsWith("Bearer ")) {
+  if (!headerAuth || !headerAuth.startsWith("Bearer ")) {
     return res.status(401).json({
       data: false,
       success: false,
@@ -15,7 +15,7 @@ exports.authMiddleware = async (req, res, next) => {
 
   try {
     token = headerAuth.split(" ")[1];
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
     const currentUser = await user.findById(decoded.id).select("-password");
     req.user = currentUser;
     if (!req.user) {
@@ -27,6 +27,7 @@ exports.authMiddleware = async (req, res, next) => {
     }
     next();
   } catch (error) {
+    console.log("JWT ERROR:", error.message);
     return res.status(401).json({
       data: false,
       success: false,

@@ -6,8 +6,7 @@ import { resendOtp, verifyOtp } from "../redux/thunks/authThunks";
 import { toast } from "react-toastify";
 import { selectAuthLoading } from "../redux/selectors/authSelectors";
 
-const OtpModal = ({ email, onClose }) => {
-  console.log("OTP Modal received email:", email);
+const OtpModal = ({ email, onClose, shouldAutoSend = false }) => {
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [timer, setTimer] = useState(30);
   const inputRefs = useRef([]);
@@ -23,13 +22,19 @@ const OtpModal = ({ email, onClose }) => {
     }
   }, [timer]);
 
-
   const maskedEmail = email
     ? email.replace(
         /^(.)(.*)(.@.*)$/,
         (_, a, b, c) => a + "*".repeat(b.length) + c,
       )
     : "";
+  useEffect(() => {
+    // Only trigger the API call if specifically requested (Login flow)
+    if (shouldAutoSend && email) {
+      dispatch(resendOtp({ email }));
+      console.log("Auto-sending OTP for login flow...");
+    }
+  }, [shouldAutoSend, email, dispatch]);
 
   const handleChange = (value, index) => {
     if (isNaN(value)) return;
@@ -37,22 +42,31 @@ const OtpModal = ({ email, onClose }) => {
     newOtp[index] = value.substring(value.length - 1);
     setOtp(newOtp);
 
-    if (value && index < 5) inputRefs.current[index + 1].focus();
-  };
+    if (value && index < 5) {
+      inputRefs.current[index + 1].focus();
+    }
 
-  const handleKeyDown = (e, index) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+    // auto-submit when last digit filled
+    const filled = newOtp.join("");
+    if (filled.length === 6 && !newOtp.includes("")) {
+      submitOtp(filled);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handlePaste = (e) => {
     e.preventDefault();
-    const otpValue = otp.join("");
-    if (otpValue.length < 6) return toast.warn("Enter 6-digit code");
+    const pasted = e.clipboardData.getData("text").trim().slice(0, 6);
+    if (!/^\d+$/.test(pasted)) return;
 
+    const newOtp = pasted.split("").concat(new Array(6).fill("")).slice(0, 6);
+    setOtp(newOtp);
+    inputRefs.current[Math.min(pasted.length, 5)].focus();
+
+    if (pasted.length === 6) submitOtp(pasted);
+  };
+
+  const submitOtp = async (otpValue) => {
     const resultAction = await dispatch(verifyOtp({ email, otp: otpValue }));
-    console.log(resultAction);
     if (verifyOtp.fulfilled.match(resultAction)) {
       toast.success("Account Verified Successfully");
       onClose();
@@ -60,6 +74,13 @@ const OtpModal = ({ email, onClose }) => {
     } else {
       toast.error(resultAction.payload);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const otpValue = otp.join("");
+    if (otpValue.length < 6) return toast.warn("Enter 6-digit code");
+    await submitOtp(otpValue);
   };
 
   const handleResend = async () => {
@@ -105,6 +126,7 @@ const OtpModal = ({ email, onClose }) => {
                 value={data}
                 onChange={(e) => handleChange(e.target.value, index)}
                 onKeyDown={(e) => handleKeyDown(e, index)}
+                onPaste={handlePaste}
                 className="input-editorial p-0! w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold"
               />
             ))}
