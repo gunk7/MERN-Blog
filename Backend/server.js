@@ -34,10 +34,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", allRoutes);
 
-/* app.get("/", (req, res) => {
+app.get("/", (req, res) => {
   return res.send("Welcome to the Blogging Platform API");
-}); */
-
+}); 
 /* app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); */
