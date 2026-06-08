@@ -36,13 +36,17 @@ const blogSchema = new mongoose.Schema(
 
     coverImage: {
       type: String,
-      default: "uploads/blogs/covers/default-cover.png",
+      default: null,
+    },
+    coverImagePublicId: {
+      type: String,
+      default: null,
     },
     images: {
       type: [
         {
           url: { type: String, required: true },
-          filename: { type: String, required: true },
+          publicId: { type: String },
           size: { type: Number },
           order: { type: Number, default: 0 },
         },

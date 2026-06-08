@@ -205,7 +205,7 @@ const AdminBlogViewer = () => {
 
         {blog.coverImage && (
           <div className="w-full h-64 sm:h-80 rounded-4xl overflow-hidden border border-black/5 shadow-lavender">
-            <img src={`${imgUrl}/${blog.coverImage}`} alt={blog.title} className="w-full h-full object-cover" />
+            <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" />
           </div>
         )}
 

@@ -262,7 +262,7 @@ const BlogManagement = () => {
           <div className="flex items-center justify-center">
             {row.original.coverImage ? (
               <img
-                src={`${imgUrl}/${row.original.coverImage}`}
+                src={row.original.coverImage}
                 alt={row.original.title}
                 className="w-10 h-10 rounded-xl object-cover border border-surface-highest/40"
               />

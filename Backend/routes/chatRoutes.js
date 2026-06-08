@@ -9,8 +9,8 @@ const {
   summaryHandler,
   deleteChatHandler,
   renameChatHandler,
-  getUsageHandler,
 } = require("../controllers/chatController");
+const { getMyUsage } = require("../controllers/usageControllers");
 const rateLimit = require("express-rate-limit");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { checkUsageLimit } = require("../middleware/checkUsageLimit");
@@ -22,7 +22,7 @@ const aiLimiter = rateLimit({
 
 // Apply authMiddleware to ALL routes since they all rely on req.user or DB saving
 router.use(authMiddleware);
-router.get("/usage/me", getUsageHandler);
+router.get("/usage/me", getMyUsage);
 router.post("/message", aiLimiter, checkUsageLimit("aiChat"), chatHandler);
 
 // Writing & Blog utilities — keep BEFORE /:chatId wildcard

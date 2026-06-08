@@ -18,7 +18,11 @@ const transactionSchema = new mongoose.Schema(
       ref: "Plan",
       required: true,
     },
-
+    type: {
+      type: String,
+      enum: ["subscription", "addon"],
+      default: "subscription",
+    },
     amount: {
       type: Number,
       required: true,
@@ -101,18 +105,14 @@ const transactionSchema = new mongoose.Schema(
       default: 0,
     },
 
-    refundReason: {
-      type: String,
-      trim: true,
-    },
-
-    refundedAt: {
-      type: Date,
-    },
-
     providerRefundId: {
       type: String,
       trim: true,
+    },
+
+    refundRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "RefundRequest",
     },
     invoicePdfUrl: { type: String, trim: true },
   },
@@ -175,10 +175,6 @@ transactionSchema.pre("validate", async function () {
     throw new Error(
       "paymentId or invoiceId is required when transaction is paid",
     );
-  }
-
-  if (this.status === "refunded" && !this.paidAt) {
-    throw new Error("Cannot refund a transaction that was never paid");
   }
 
   if (

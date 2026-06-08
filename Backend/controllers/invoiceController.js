@@ -10,14 +10,22 @@ const {
 // ── POST /api/invoices/upload-pdf ─────────────────────────────────────────────
 exports.uploadInvoicePdf = async (req, res) => {
   try {
-    if (!req.file) {
+    /*  if (!req.file) {
       return res.status(400).json({
         success: false,
         data: false,
         message: "No file received",
       });
     }
+ */
 
+    if (!req.cloudinaryFile) {
+      return res.status(400).json({
+        success: false,
+        data: false,
+        message: "No file received",
+      });
+    }
     const { error, value } = uploadPdfSchema.validate(req.body);
     if (error) {
       return res.status(400).json({
@@ -31,12 +39,14 @@ exports.uploadInvoicePdf = async (req, res) => {
     // ── Check if PDF already exists ──────────────────────────────
     const existing = await Invoice.findOne({ invoiceId: value.invoiceId });
     if (existing?.pdfUrl) {
-      const uploadedPath = path.join(
-        __dirname,
-        "../uploads/invoices",
-        req.file.filename,
-      );
-      if (fs.existsSync(uploadedPath)) fs.unlinkSync(uploadedPath);
+      // No local file to clean up anymore — Cloudinary middleware already
+      // uploaded it, but we can destroy the orphaned upload since we won't use it
+      if (req.cloudinaryFile?.public_id) {
+        const cloudinary = require("../config/cloudinary");
+        await cloudinary.uploader.destroy(req.cloudinaryFile.public_id, {
+          resource_type: "raw",
+        });
+      }
 
       return res.json({
         success: true,
@@ -44,15 +54,27 @@ exports.uploadInvoicePdf = async (req, res) => {
       });
     }
 
-    const pdfUrl = `/uploads/invoices/${req.file.filename}`;
+    // ── Save Cloudinary URL ──────────────────────────────────────────────────
+    const pdfUrl = req.cloudinaryFile.secure_url;
 
     const invoice = await Invoice.findOneAndUpdate(
       { invoiceId: value.invoiceId },
-      { pdfUrl },
+      {
+        $set: {
+          pdfUrl,
+          pdfPublicId: req.cloudinaryFile.public_id, // ← see schema note below
+        },
+      },
       { new: true },
     );
 
     if (!invoice) {
+      // Invoice record missing — clean up the orphaned Cloudinary file
+      const cloudinary = require("../config/cloudinary");
+      await cloudinary.uploader.destroy(req.cloudinaryFile.public_id, {
+        resource_type: "raw",
+      });
+
       return res.status(404).json({
         success: false,
         data: false,
@@ -71,6 +93,7 @@ exports.uploadInvoicePdf = async (req, res) => {
       .json({ success: false, data: false, message: err.message });
   }
 };
+
 // ── GET /api/invoices/my ──────────────────────────────────────────────────────
 exports.getMyInvoices = async (req, res) => {
   try {

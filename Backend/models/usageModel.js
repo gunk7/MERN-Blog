@@ -10,32 +10,25 @@ const usageSchema = new mongoose.Schema(
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
-      default: null,
-    },
-    month: {
-      type: String, // "2026-05"
       required: true,
     },
-    chatTokens: {
+    month: {
+      type: String, // "2025-06"
+      required: true,
+    },
+
+    tokensUsed: {
       type: Number,
       default: 0,
     },
-    writingAssistHits: {
-      type: Number,
-      default: 0,
-    },
-    summaryHits: {
-      type: Number,
-      default: 0,
-    },
-    tagHits: {
+    addOnTokensUsed: {
       type: Number,
       default: 0,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-usageSchema.index({ userId: 1, month: 1 }, { unique: true });
+usageSchema.index({ userId: 1, subscriptionId: 1, month: 1 }, { unique: true });
 
 module.exports = mongoose.model("UsageLog", usageSchema);

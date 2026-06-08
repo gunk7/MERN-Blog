@@ -3,6 +3,17 @@ const Plan = require("../models/planModel");
 const Subscription = require("../models/subscriptionModel");
 const Transaction = require("../models/transactionModel");
 const Invoice = require("../models/invoiceModel");
+const AddonPurchase = require("../models/addonPurchaseModel.js");
+
+const statusMap = {
+  active: "active",
+  trialing: "trialing",
+  past_due: "past_due",
+  canceled: "cancelled",
+  incomplete: "incomplete",
+  incomplete_expired: "expired",
+  unpaid: "past_due",
+};
 
 exports.handleStripeWebhook = async (req, res) => {
   const signature = req.headers["stripe-signature"];
@@ -28,7 +39,8 @@ exports.handleStripeWebhook = async (req, res) => {
       // ── New paid subscription created via Checkout ──────────────────────
       case "checkout.session.completed": {
         const session = event.data.object;
-        const { userId, planId, transactionId } = session.metadata;
+        const { userId, planId, transactionId, subscriptionId, type } =
+          session.metadata;
 
         if (!userId || !planId || !transactionId) {
           console.error(
@@ -37,6 +49,74 @@ exports.handleStripeWebhook = async (req, res) => {
           return res.json({ received: true });
         }
 
+        // ── Addon purchase ────────────────────────────────────────────────────────
+        if (type === "addon") {
+          const existingTx = await Transaction.findById(transactionId);
+          if (existingTx?.status === "paid") {
+            return res.json({ received: true });
+          }
+
+          const plan = await Plan.findById(planId);
+          if (!plan) throw new Error("Addon plan not found");
+
+          const subscription = await Subscription.findById(subscriptionId);
+          if (!subscription)
+            throw new Error("Subscription not found for addon");
+
+          let stripeInvoice = null;
+          if (session.invoice) {
+            stripeInvoice = await stripe.invoices.retrieve(session.invoice);
+          }
+
+          const updatedTx = await Transaction.findByIdAndUpdate(
+            transactionId,
+            {
+              invoiceId: stripeInvoice?.id ?? null,
+              receiptUrl: stripeInvoice?.hosted_invoice_url ?? null,
+              invoicePdfUrl: stripeInvoice?.invoice_pdf ?? null,
+              paymentIntentId: session.payment_intent ?? null,
+              stripeEventId: event.id,
+              type: "addon",
+              status: "paid",
+              paidAt: new Date(),
+            },
+            { new: true },
+          );
+
+          const addon = await AddonPurchase.create({
+            userId,
+            subscriptionId,
+            transactionId: updatedTx._id,
+            planId: plan._id,
+            planSnapshot: {
+              name: plan.name,
+              price: plan.price,
+              tokens: plan.limit.monthlyTokens,
+            },
+            tokensGranted: plan.limit.monthlyTokens,
+            tokensRemaining: plan.limit.monthlyTokens,
+            expiresAt: subscription.endDate,
+            status: "active",
+          });
+
+          await Invoice.create({
+            transactionId: updatedTx._id,
+            userId,
+            planId: plan._id,
+            planName: plan.name,
+            amount: plan.price,
+            currency: "INR",
+            stripeInvoiceId: stripeInvoice?.id ?? null,
+            stripeInvoicePdfUrl: stripeInvoice?.invoice_pdf ?? null,
+            status: "paid",
+            paidAt: new Date(),
+          });
+
+          console.log("checkout.session.completed — addon created:", addon._id);
+          break; // ← critical: stops here, never reaches subscription code
+        }
+
+        // ── Regular subscription ──────────────────────────────────────────────────
         const existingTransaction = await Transaction.findById(transactionId);
         if (
           existingTransaction?.status === "paid" &&
@@ -86,7 +166,6 @@ exports.handleStripeWebhook = async (req, res) => {
         const invoiceAmountPaid = stripeInvoice
           ? stripeInvoice.amount_paid / 100
           : plan.price;
-
         const invoiceCurrency = stripeInvoice
           ? stripeInvoice.currency.toUpperCase()
           : "INR";
@@ -94,15 +173,13 @@ exports.handleStripeWebhook = async (req, res) => {
         const startDate = stripeSubscription.current_period_start
           ? new Date(stripeSubscription.current_period_start * 1000)
           : new Date();
-
         const endDate = stripeSubscription.current_period_end
           ? new Date(stripeSubscription.current_period_end * 1000)
           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-        // FIX 5: derive autoRenew from Stripe's cancel_at_period_end at creation time
-        // cancel_at_period_end: false → Stripe will renew → autoRenew: true
-        // cancel_at_period_end: true  → Stripe won't renew  → autoRenew: false
         const autoRenew = !stripeSubscription.cancel_at_period_end;
+        const subscriptionStatus =
+          statusMap[stripeSubscription.status] || "active";
 
         const subscription = await Subscription.create({
           userId,
@@ -112,11 +189,11 @@ exports.handleStripeWebhook = async (req, res) => {
             price: plan.price,
             interval: plan.interval,
             features: plan.features,
-            limits: plan.limits,
+            limit: plan.limit,
           },
           providerSubscriptionId: stripeSubscription.id,
           providerCustomerId: stripeSubscription.customer,
-          status: "active",
+          status: subscriptionStatus,
           startDate,
           endDate,
           autoRenew,
@@ -133,6 +210,8 @@ exports.handleStripeWebhook = async (req, res) => {
             invoicePdfUrl: stripeInvoice?.invoice_pdf ?? null,
             paymentIntentId:
               stripeInvoice?.payments?.data?.[0]?.payment?.payment_intent ??
+              stripeInvoice?.payment_intent ??
+              session.payment_intent ??
               null,
             billingReason: "subscription_create",
             stripeEventId: event.id,
@@ -173,16 +252,6 @@ exports.handleStripeWebhook = async (req, res) => {
         // cancel_at_period_end: false → auto-renew is on
         const autoRenew = !stripeSub.cancel_at_period_end;
 
-        // Map Stripe status to your schema's enum values
-        const statusMap = {
-          active: "active",
-          trialing: "trialing",
-          past_due: "past_due",
-          canceled: "cancelled", // Stripe uses "canceled" (1 l), your schema "cancelled" (2 l)
-          incomplete: "incomplete",
-          incomplete_expired: "expired",
-          unpaid: "past_due",
-        };
         const newStatus = statusMap[stripeSub.status] ?? "active";
 
         const updatePayload = {
@@ -211,7 +280,7 @@ exports.handleStripeWebhook = async (req, res) => {
         break;
       }
 
-      case "customer.subscription.deleted": {
+      /* case "customer.subscription.deleted": {
         const stripeSub = event.data.object;
 
         const updatePayload = {
@@ -228,6 +297,35 @@ exports.handleStripeWebhook = async (req, res) => {
           { providerSubscriptionId: stripeSub.id },
           updatePayload,
         );
+
+        console.log("customer.subscription.deleted — subscription cancelled");
+        break;
+      } */
+
+      case "customer.subscription.deleted": {
+        const stripeSub = event.data.object;
+
+        await Subscription.findOneAndUpdate(
+          { providerSubscriptionId: stripeSub.id },
+          {
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: new Date(),
+            endDate: new Date(), // ← immediate, not current_period_end
+          },
+          { new: true },
+        );
+
+        if (cancelledSub) {
+          await AddonPurchase.updateMany(
+            {
+              userId: cancelledSub.userId,
+              subscriptionId: cancelledSub._id,
+              status: "active",
+            },
+            { status: "cancelled" },
+          );
+        }
 
         console.log("customer.subscription.deleted — subscription cancelled");
         break;
@@ -289,6 +387,7 @@ exports.handleStripeWebhook = async (req, res) => {
         const renewalTx = await Transaction.create({
           userId: sub?.userId,
           planId: sub?.planId,
+          subscriptionId: sub?._id,
           providerSubscriptionId: inv.subscription,
           providerCustomerId: inv.customer,
           invoiceId: inv.id,
@@ -366,6 +465,7 @@ exports.handleStripeWebhook = async (req, res) => {
         const renewalTx = await Transaction.create({
           userId: sub.userId,
           planId: sub.planId,
+          subscriptionId: sub._id,
           providerSubscriptionId: stripeInv.subscription,
           providerCustomerId: stripeInv.customer,
           invoiceId: stripeInv.id,
@@ -415,7 +515,6 @@ exports.handleStripeWebhook = async (req, res) => {
       case "charge.refunded": {
         const charge = event.data.object;
 
-        // Find transaction by paymentIntentId
         const transaction = await Transaction.findOne({
           paymentIntentId: charge.payment_intent,
         });
@@ -425,39 +524,67 @@ exports.handleStripeWebhook = async (req, res) => {
           break;
         }
 
-        // Avoid reprocessing if already marked refunded
         if (transaction.status === "refunded") {
           console.log("charge.refunded — already processed, skipping");
           break;
         }
 
         const refund = charge.refunds?.data?.[0];
-
         transaction.status = "refunded";
         transaction.refundAmount = charge.amount_refunded / 100;
-        transaction.refundedAt = new Date();
         transaction.providerRefundId = refund?.id ?? null;
         transaction.stripeEventId = event.id;
         await transaction.save();
 
-        // Cancel subscription if still active
-        const subscription = await Subscription.findOne({
-          userId: transaction.userId,
-          status: "active",
-        });
+        // Only cancel if not already cancelled by the admin controller
+        await Subscription.findOneAndUpdate(
+          { providerSubscriptionId: transaction.providerSubscriptionId },
+          {
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: new Date(),
+            endDate: new Date(),
+          },
+        );
 
-        if (subscription?.providerSubscriptionId) {
-          await stripe.subscriptions.cancel(
-            subscription.providerSubscriptionId,
+        const cancelledSub = await Subscription.findOneAndUpdate(
+          { providerSubscriptionId: transaction.providerSubscriptionId },
+          {
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: new Date(),
+            endDate: new Date(),
+          },
+          { new: true }, // ← add this
+        );
+
+        // ← ADD THIS
+        if (cancelledSub) {
+          await AddonPurchase.updateMany(
+            {
+              userId: cancelledSub.userId,
+              subscriptionId: cancelledSub._id,
+              status: "active",
+            },
+            { status: "cancelled" },
           );
         }
 
-        if (subscription) {
+        /*  if (subscription) {
+          if (subscription.providerSubscriptionId) {
+            try {
+              await stripe.subscriptions.cancel(
+                subscription.providerSubscriptionId,
+              );
+            } catch (err) {
+              if (err.code !== "resource_missing") throw err;
+            }
+          }
           subscription.status = "cancelled";
           subscription.autoRenew = false;
           subscription.cancelledAt = new Date();
           await subscription.save();
-        }
+        } */
 
         console.log("charge.refunded — transaction updated:", transaction._id);
         break;
@@ -482,13 +609,14 @@ exports.handleStripeWebhook = async (req, res) => {
         if (refund.status === "failed") {
           transaction.status = "paid";
           transaction.refundAmount = 0;
-          transaction.refundedAt = null;
           transaction.providerRefundId = null;
           await transaction.save();
 
           // Reactivate subscription
           await Subscription.findOneAndUpdate(
-            { userId: transaction.userId, status: "cancelled" },
+            {
+              providerSubscriptionId: transaction.providerSubscriptionId,
+            },
             {
               status: "active",
               autoRenew: true,
@@ -505,7 +633,6 @@ exports.handleStripeWebhook = async (req, res) => {
         // If refund succeeded, ensure transaction is marked correctly
         if (refund.status === "succeeded") {
           transaction.status = "refunded";
-          transaction.refundedAt = new Date();
           await transaction.save();
 
           console.log("charge.refund.updated — refund confirmed succeeded");
@@ -524,6 +651,7 @@ exports.handleStripeWebhook = async (req, res) => {
       case "charge.succeeded":
       case "refund.created":
       case "refund.updated":
+      case "payment_intent.payment_failed":
       case "customer.subscription.created": {
         console.log(`Acknowledged (no action): ${event.type}`);
         break;

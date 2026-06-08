@@ -7,26 +7,19 @@ const {
   createCheckoutSessionSchema,
 } = require("../validations/subscriptionValidation");
 
-router.post("/free", authMiddleware, subscriptionController.selectFreePlan);
+router.use(authMiddleware);
+
+router.post("/free", subscriptionController.selectFreePlan);
 
 router.post(
   "/checkout",
-  authMiddleware,
   validate(createCheckoutSessionSchema),
   subscriptionController.createCheckoutSession,
 );
-router.get("/my", authMiddleware, subscriptionController.getMySubscriptions);
-router.patch(
-  "/cancel",
-  authMiddleware,
-  subscriptionController.cancelSubscription,
-);
-router.patch(
-  "/toggle-auto-renew",
-  authMiddleware,
-  subscriptionController.toggleAutoRenewal,
-);
-
-router.post("/refund", authMiddleware, subscriptionController.refundRequest);
+router.get("/my", subscriptionController.getMySubscriptions);
+router.patch("/cancel", subscriptionController.cancelSubscription);
+router.patch("/toggle-auto-renew", subscriptionController.toggleAutoRenewal);
+router.post("/refund-request", subscriptionController.refundRequest);
+router.get("/refund-status", subscriptionController.getRefundStatus);
 
 module.exports = router;

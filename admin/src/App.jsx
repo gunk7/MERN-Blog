@@ -13,10 +13,12 @@ import BlogManagement from "./pages/admin/BlogManagement";
 import AdminUserProfile from "./pages/admin/AdminUserProfile";
 import AdminBlogViewer from "./pages/admin/AdminBlogViewer";
 import AdminPlansPage from "./pages/admin/AdminPlansPage";
-
+import AdminSubscriptionsPage from "./pages/admin/AdminSubscriptionsPage";
+import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage";
 // Middleware
 import PublicRoute from "./middleware/PublicRoute";
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
+import AdminRefundRequestsPage from "./pages/admin/AdminRefundRequestPage";
 
 function App() {
   return (
@@ -30,6 +32,9 @@ function App() {
           <Route path="/users" element={<UserManagement />} />
           <Route path="/blogs" element={<BlogManagement />} />
           <Route path="/plans" element={<AdminPlansPage />} />
+          <Route path="/subscriptions" element={<AdminSubscriptionsPage />} />
+          <Route path="/transactions" element={<AdminTransactionsPage />} />
+          <Route path="/refund" element={<AdminRefundRequestsPage />} />
           <Route
             path="/users/profile/:username"
             element={<AdminUserProfile />}

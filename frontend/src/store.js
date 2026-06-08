@@ -6,6 +6,7 @@ import userReducer from "./redux/slice/userSlice";
 import adminReducer from "./redux/slice/adminSlice";
 import blogReducer from "./redux/slice/blogSlice";
 import commentReducer from "./redux/slice/commentSlice";
+import subscriptionReducer from "./redux/slice/subscriptionSlice";
 import createTransform from "redux-persist/es/createTransform";
 
 const authTransform = createTransform(
@@ -39,6 +40,7 @@ const appReducer = combineReducers({
   users: userReducer,
   blog: blogReducer,
   comment: commentReducer,
+  subscription: subscriptionReducer,
 });
 
 const rootReducer = (state, action) => {

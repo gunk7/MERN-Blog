@@ -12,7 +12,8 @@ const planRoutes = require("./planRoutes");
 const subscriptionRoutes = require("./subRoutes");
 const transRoutes = require("./transRoutes");
 const invoiceRoutes = require("./invoiceRoutes");
-
+const usageRoutes = require("./usageRoutes");
+const addonRoutes = require("./addonRoutes");
 router.use("/auth", authRoutes);
 router.use("/admin", adminRoutes);
 router.use("/user", userRoutes);
@@ -22,6 +23,8 @@ router.use("/follow", followRoutes);
 router.use("/chat", chatRoutes);
 router.use("/plans", planRoutes);
 router.use("/subscription", subscriptionRoutes);
+router.use("/usage", usageRoutes);
+router.use("/addon", addonRoutes);
 router.use("/transaction", transRoutes);
 router.use("/invoices", invoiceRoutes);
 

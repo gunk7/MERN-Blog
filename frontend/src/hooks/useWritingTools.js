@@ -199,7 +199,6 @@ export function useWritingTools({
     } finally {
       assistLoadingRef.current = false;
       setAssistLoading(false);
-      setActivePanel(null);
     }
   };
 
@@ -210,7 +209,11 @@ export function useWritingTools({
   const regenerate = () => {
     const { action, tone } = lastActionRef.current;
     if (!action) return;
-    runAssist(action, tone);
+    if (action === "summary") {
+      generateSummary(); // ← route to the correct function
+    } else {
+      runAssist(action, tone);
+    }
   };
 
   // ── Apply actions ──────────────────────────────────────────────────────
@@ -317,7 +320,6 @@ export function useWritingTools({
     } finally {
       assistLoadingRef.current = false;
       setAssistLoading(false);
-      setActivePanel(null);
     }
   };
 
@@ -369,7 +371,6 @@ export function useWritingTools({
     } finally {
       assistLoadingRef.current = false;
       setAssistLoading(false);
-      setActivePanel(null);
     }
   };
 

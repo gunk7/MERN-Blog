@@ -15,6 +15,11 @@ const planSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    type: {
+      enum: ["base", "add_on"],
+      type: String,
+      default: "base",
+    },
     description: {
       type: String,
       trim: true,
@@ -45,12 +50,8 @@ const planSchema = new mongoose.Schema(
       tagsGeneration: { type: Boolean, default: false },
       analyticsAccess: { type: Boolean, default: false },
     },
-    limits: {
+    limit: {
       monthlyTokens: { type: Number, default: 0 },
-      writingAssistHits: { type: Number, default: 0 },
-      summaryHits: { type: Number, default: 0 },
-      tagHits: { type: Number, default: 0 },
-      maxInputChars: { type: Number, default: 2000 },
     },
 
     stripeProductId: String,
@@ -86,8 +87,15 @@ planSchema.pre("validate", async function () {
     this.interval = "one_time";
   }
 
-  if (this.price > 0 && this.limits.monthlyTokens === 0) {
-    throw new Error("Paid plan must have monthlyTokens > 0");
+  if (
+    this.price > 0 &&
+    this.type === "base" &&
+    this.limit.monthlyTokens === 0
+  ) {
+    throw new Error("Paid base plan must have monthlyTokens > 0");
+  }
+  if (this.type === "add_on" && this.limit.monthlyTokens === 0) {
+    throw new Error("Addon plan must have monthlyTokens > 0");
   }
 });
 

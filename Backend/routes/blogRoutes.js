@@ -22,14 +22,7 @@ const {
 route.post(
   "/upload/inline",
   authMiddleware,
-  (req, res, next) => {
-    req.imagePath = {
-      image: "blogs/inline",
-    };
-
-    next();
-  },
-  uploadInlineImage,
+  ...uploadInlineImage,
   blogController.uploadInlineImage,
 );
 
@@ -40,14 +33,7 @@ route.post(
 route.post(
   "/",
   authMiddleware,
-  (req, res, next) => {
-    req.imagePath = {
-      coverImage: "blogs/covers",
-    };
-
-    next();
-  },
-  uploadBlogFiles,
+  ...uploadBlogFiles,
   validateCreateBlog,
   blogController.createBlog,
 );
@@ -73,14 +59,7 @@ route.get("/user/:userId", blogController.getBlogsByUser);
 route.put(
   "/:id",
   authMiddleware,
-  (req, res, next) => {
-    req.imagePath = {
-      coverImage: "blogs/covers",
-    };
-
-    next();
-  },
-  uploadBlogFiles,
+  ...uploadBlogFiles,
   validateUpdateBlog,
   blogController.updateBlog,
 );

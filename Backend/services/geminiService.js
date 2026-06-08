@@ -7,7 +7,7 @@ const API_KEY = process.env.GEMINI_API_KEY || "YOUR_API_KEY";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash",
+  model: "gemini-3.1-flash-lite", // or "gemini-3.5-pro" for the pro version
 });
 
 async function generateResponse(message) {
@@ -15,9 +15,15 @@ async function generateResponse(message) {
     contents: [{ parts: [{ text: message }] }],
   });
   const response = result.response;
+  const usage = response.usageMetadata || {};
+
   return {
     text: response.text(),
-    usage: response.usageMetadata || {},
+    usage: {
+      totalTokenCount: usage.totalTokenCount ?? 0,
+      promptTokenCount: usage.promptTokenCount ?? 0,
+      candidatesTokenCount: usage.candidatesTokenCount ?? 0,
+    },
   };
 }
 
@@ -31,4 +37,5 @@ async function generateStreamingResponse(message, history = []) {
   return await chatSession.sendMessageStream(message);
 }
 
-module.exports = { generateResponse, generateStreamingResponse };
+module.exports = { generateResponse, generateStreamingResponse, model };
+

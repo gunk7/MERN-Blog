@@ -25,12 +25,8 @@ const subscriptionSchema = new mongoose.Schema(
         analyticsAccess: Boolean,
       },
 
-      limits: {
+      limit: {
         monthlyTokens: Number,
-        writingAssistHits: Number,
-        summaryHits: Number,
-        tagHits: Number,
-        maxInputChars: Number,
       },
     },
     providerSubscriptionId: {
@@ -69,6 +65,25 @@ const subscriptionSchema = new mongoose.Schema(
     cancelledAt: {
       type: Date,
     },
+    // Add this array inside subscriptionSchema
+addons: [
+  {
+    addOnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Plan",
+    },
+    purchasedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    pricePaid: Number,
+    tokenAllowance: {
+      type: Number, // How many tokens this specific add-on added
+      required: true,
+    },
+    stripeId: String, // To track the line-item / subscription item if recurring on Stripe
+  }
+],
   },
   { timestamps: true },
 );
@@ -80,12 +95,13 @@ subscriptionSchema.index({ providerCustomerId: 1 });
 
 subscriptionSchema.virtual("isLive").get(function () {
   return (
-    ["active", "cancelled"].includes(this.status) && this.endDate > new Date()
+    ["active", "trialing", "cancelled"].includes(this.status) &&
+    this.endDate > new Date()
   );
 });
 
 subscriptionSchema.virtual("daysRemaining").get(function () {
-  if (!["active", "cancelled"].includes(this.status)) return 0;
+  if (!["active", "trialing", "cancelled"].includes(this.status)) return 0;
   const diff = this.endDate - new Date();
   return Math.max(0, Math.ceil(diff / 86400000));
 });

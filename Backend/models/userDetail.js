@@ -6,6 +6,10 @@ const UserDetailsSchema = new mongoose.Schema(
       type: String,
       default: "uploads/images/profilePics/blank.jpg",
     },
+    profilePicPublicId: {
+      type: String,
+      default: null,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
@@ -20,7 +24,7 @@ const UserDetailsSchema = new mongoose.Schema(
 
     lastName: {
       type: String,
-     // required: true,
+      // required: true,
     },
 
     bio: {
@@ -36,7 +40,7 @@ const UserDetailsSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["male", "female", "other","prefer not to say"],
+      enum: ["male", "female", "other", "prefer not to say"],
       lowercase: true,
       trim: true,
     },

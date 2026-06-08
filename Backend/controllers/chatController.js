@@ -1,6 +1,7 @@
 const Message = require("../models/messageModel");
 const Chat = require("../models/chatModel");
 const UsageLog = require("../models/usageModel");
+const AddonPurchase = require("../models/addonPurchaseModel");
 const { getCurrentMonth } = require("../middleware/checkUsageLimit");
 const {
   chat,
@@ -8,8 +9,49 @@ const {
   generateTags,
   generateSummary,
 } = require("../services/aiService");
-const Subscription = require("../models/subscriptionModel");
-const { FREE_PLAN } = require("../middleware/checkUsageLimit");
+
+async function deductTokens(req, tokenCount) {
+  console.log("[deductTokens]", {
+    userId: req.user.id,
+    subscriptionId: req.subscriptionId,
+    month: getCurrentMonth(),
+    tokenCount,
+    useAddon: req.useAddonTokens,
+  });
+  if (req.useAddonTokens && req.activeAddon) {
+    const updated = await AddonPurchase.findByIdAndUpdate(
+      req.activeAddon._id,
+      { $inc: { tokensRemaining: -tokenCount } },
+      { new: true },
+    );
+
+    if (updated.tokensRemaining <= 0) {
+      await AddonPurchase.findByIdAndUpdate(req.activeAddon._id, {
+        $set: { status: "exhausted", tokensRemaining: 0 },
+      });
+    }
+
+    await UsageLog.findOneAndUpdate(
+      {
+        userId: req.user.id,
+        subscriptionId: req.subscriptionId,
+        month: getCurrentMonth(),
+      },
+      { $inc: { addOnTokensUsed: tokenCount } },
+      { upsert: true },
+    );
+  } else {
+    await UsageLog.findOneAndUpdate(
+      {
+        userId: req.user.id,
+        subscriptionId: req.subscriptionId,
+        month: getCurrentMonth(),
+      },
+      { $inc: { tokensUsed: tokenCount } },
+      { upsert: true },
+    );
+  }
+}
 
 async function chatHandler(req, res) {
   let aiMessageDoc = null;
@@ -111,8 +153,14 @@ async function chatHandler(req, res) {
       // ── FINAL RESPONSE ─────────────────────────────────
 
       const finalResponse = await result.response;
-
       const usage = finalResponse?.usageMetadata || {};
+
+      console.log("[gemini usage]", JSON.stringify(usage)); // ← see what's actually there
+
+      const totalTokens =
+        usage.totalTokenCount ||
+        (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0) ||
+        Math.ceil((message.length + fullAiResponse.length) / 4); // character-based fallback
 
       // Update user token count
       await Message.findByIdAndUpdate(userMessageDoc._id, {
@@ -132,13 +180,14 @@ async function chatHandler(req, res) {
       await Chat.findByIdAndUpdate(chatId, {
         lastMessageAt: new Date(),
       });
-      await UsageLog.findOneAndUpdate(
-        { userId, month: getCurrentMonth() },
-        {
-          $inc: { chatTokens: usage.totalTokenCount || 0 },
-          $setOnInsert: { subscriptionId: req.subscriptionId || null },
-        },
-        { upsert: true, new: true },
+      await deductTokens(req, totalTokens);
+      console.log(
+        "[usage] tracked:",
+        totalTokens,
+        "sub:",
+        req.subscriptionId,
+        "month:",
+        getCurrentMonth(),
       );
 
       res.write(
@@ -308,16 +357,9 @@ async function renameChatHandler(req, res) {
 async function writingAssistantHandler(req, res) {
   try {
     const { text, action, tone } = req.body;
-    const { result } = await writingAssist({ text, action, tone });
+    const { result, tokenCount } = await writingAssist({ text, action, tone });
 
-    await UsageLog.findOneAndUpdate(
-      { userId: req.user.id, month: getCurrentMonth() },
-      {
-        $inc: { writingAssistHits: 1 },
-        $setOnInsert: { subscriptionId: req.subscriptionId || null },
-      },
-      { upsert: true },
-    );
+    await deductTokens(req, tokenCount);
 
     res.status(200).json({ success: true, result });
   } catch (error) {
@@ -329,16 +371,9 @@ async function writingAssistantHandler(req, res) {
 async function tagsHandler(req, res) {
   try {
     const { text } = req.body;
-    const { tags } = await generateTags({ text });
+    const { tags, tokenCount } = await generateTags({ text });
 
-    await UsageLog.findOneAndUpdate(
-      { userId: req.user.id, month: getCurrentMonth() },
-      {
-        $inc: { tagHits: 1 },
-        $setOnInsert: { subscriptionId: req.subscriptionId || null },
-      },
-      { upsert: true },
-    );
+    await deductTokens(req, tokenCount);
 
     res.status(200).json({ success: true, tags });
   } catch (error) {
@@ -350,74 +385,16 @@ async function tagsHandler(req, res) {
 async function summaryHandler(req, res) {
   try {
     const { text, isSelection } = req.body;
-    const { summary } = await generateSummary({ text, isSelection });
+    const { summary, tokenCount } = await generateSummary({
+      text,
+      isSelection,
+    });
 
-    await UsageLog.findOneAndUpdate(
-      { userId: req.user.id, month: getCurrentMonth() },
-      {
-        $inc: { summaryHits: 1 },
-        $setOnInsert: { subscriptionId: req.subscriptionId || null },
-      },
-      { upsert: true },
-    );
+    await deductTokens(req, tokenCount);
 
     res.status(200).json({ success: true, summary });
   } catch (error) {
     console.error("[summaryHandler]", error.message);
-    res.status(500).json({ success: false, message: error.message });
-  }
-}
-
-async function getUsageHandler(req, res) {
-  try {
-    const userId = req.user.id;
-    const month = getCurrentMonth();
-
-    const subscription = await Subscription.findOne({
-      userId,
-      status: { $in: ["active", "trialing", "cancelled"] },
-      endDate: { $gt: new Date() },
-    }).lean();
-
-    const plan = subscription ? subscription.planSnapshot : FREE_PLAN;
-
-    const usage = (await UsageLog.findOne({ userId, month })) || {
-      chatTokens: 0,
-      writingAssistHits: 0,
-      summaryHits: 0,
-      tagHits: 0,
-    };
-
-    res.status(200).json({
-      success: true,
-      usage: {
-        chat: {
-          used: usage.chatTokens,
-          limit: plan.limits.monthlyTokens,
-          remaining: Math.max(0, plan.limits.monthlyTokens - usage.chatTokens),
-        },
-        writingAssist: {
-          used: usage.writingAssistHits,
-          limit: plan.limits.writingAssistHits,
-          remaining: Math.max(
-            0,
-            plan.limits.writingAssistHits - usage.writingAssistHits,
-          ),
-          locked: !plan.features.writingAssist,
-        },
-        summary: {
-          used: usage.summaryHits,
-          limit: plan.limits.summaryHits,
-          remaining: Math.max(0, plan.limits.summaryHits - usage.summaryHits),
-        },
-        tags: {
-          used: usage.tagHits,
-          limit: plan.limits.tagHits,
-          remaining: Math.max(0, plan.limits.tagHits - usage.tagHits),
-        },
-      },
-    });
-  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 }
@@ -431,5 +408,4 @@ module.exports = {
   summaryHandler,
   deleteChatHandler,
   renameChatHandler,
-  getUsageHandler,
 };

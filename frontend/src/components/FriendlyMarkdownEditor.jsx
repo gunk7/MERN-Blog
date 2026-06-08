@@ -31,7 +31,7 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import Highlight from "@tiptap/extension-highlight";
 
 // ── Upload helper ────────────────────────────────────────────────────────────
-async function uploadImageToServer(file) {
+/* async function uploadImageToServer(file) {
   const formData = new FormData();
   formData.append("image", file);
   const { data } = await API.post("/blogs/upload/inline", formData, {
@@ -45,8 +45,23 @@ async function uploadImageToServer(file) {
     size: img.size,
     order: img.order,
   };
-}
+} */
 
+async function uploadImageToServer(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+  const { data } = await API.post("/blogs/upload/inline", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const img = data.images?.[0];
+  if (!img) throw new Error("Upload failed");
+  return {
+    url: img.url,
+    publicId: img.publicId,
+    size: img.size,
+    order: img.order,
+  };
+}
 const HEADING_LEVELS = [
   { label: "Paragraph", value: 0 },
   { label: "Heading 1", value: 1 },
@@ -232,7 +247,7 @@ const FriendlyMarkdownEditor = ({
     editor?.isActive("bulletList") || editor?.isActive("orderedList");
 
   // ── Image upload ─────────────────────────────────────────────────────────
-  const handleImageUpload = useCallback(
+  /*  const handleImageUpload = useCallback(
     async (e) => {
       const files = Array.from(e.target.files || []);
       if (!files.length || !editor) return;
@@ -278,8 +293,58 @@ const FriendlyMarkdownEditor = ({
       }
     },
     [editor, uploading, images, onChange, onImagesChange],
-  );
+  ); */
 
+  // ── Image upload handler (cloudinary)─────────────────────────────────────────────────────
+  const handleImageUpload = useCallback(
+    async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length || !editor) return;
+      if (uploading) {
+        toast.warning("Please wait for current upload to finish.");
+        return;
+      }
+      setUploading(true);
+      try {
+        const accumulatedImages = [...(images || [])];
+        for (const file of files) {
+          if (!file.type.startsWith("image/")) {
+            toast.error("Invalid image file");
+            continue;
+          }
+          if (file.size > 5 * 1024 * 1024) {
+            toast.error("Each image must be under 5MB");
+            continue;
+          }
+          const uploaded = await uploadImageToServer(file);
+
+          // ← Before: had to prepend VITE_API_IMG_URL
+          // ← After: uploaded.url is already the full Cloudinary URL
+          editor
+            .chain()
+            .focus()
+            .setImage({ src: uploaded.url, alt: file.name })
+            .run();
+
+          accumulatedImages.push({
+            ...uploaded,
+            order: accumulatedImages.length,
+          });
+        }
+        onImagesChange(accumulatedImages);
+        onChange(
+          editor.isEmpty ? "" : editor.getHTML(),
+          editor.isEmpty ? {} : editor.getJSON(),
+        );
+      } catch {
+        toast.error("Image upload failed");
+      } finally {
+        setUploading(false);
+        if (imageInputRef.current) imageInputRef.current.value = "";
+      }
+    },
+    [editor, uploading, images, onChange, onImagesChange],
+  );
   // ── Link handler ─────────────────────────────────────────────────────────
   const handleLink = () => {
     const url = prompt("Enter URL");
@@ -581,8 +646,8 @@ const FriendlyMarkdownEditor = ({
         ) : (
           <div onClick={() => editor.commands.focus()}>
             <EditorContent
-  editor={editor}
-  className="
+              editor={editor}
+              className="
     w-full
     [&_.tiptap]:outline-none
     [&_.tiptap]:border-none
@@ -659,7 +724,7 @@ const FriendlyMarkdownEditor = ({
     [&_.tiptap_hr]:my-8
     [&_.tiptap_hr]:border-primary/10
   "
-/>
+            />
           </div>
         )}
       </div>

@@ -71,7 +71,7 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
     activeTab = "all",
   } = useSelector((state) => state.blog);
 
-  const isAuthenticated = useSelector(isLoggedIn); 
+  const isAuthenticated = useSelector(isLoggedIn);
   const user = useSelector(selectCurrentUser);
   const [showAllChips, setShowAllChips] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -81,14 +81,14 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
   const { ref, inView } = useInView({ threshold: 0, rootMargin: "200px" });
 
   const data = mode === "user" ? userBlogs : blogs;
-  
+
   const isInitialLoading =
     loading && query.page === 1 && (data.length === 0 || isTransitioning);
   const isFiltering =
     (loading && query.page === 1 && data.length > 0) ||
     (isTransitioning && data.length > 0);
-  
-    const isLoadingMore = loading && query.page > 1;
+
+  const isLoadingMore = loading && query.page > 1;
 
   const showBlogs = activeTab === "all" || activeTab === "blogs";
   const showAccounts = activeTab === "all" || activeTab === "accounts";
@@ -297,7 +297,7 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
                   <img
                     src={
                       u.profilePic
-                        ? `${import.meta.env.VITE_API_IMG_URL}/${u.profilePic}`
+                        ? u.profilePic
                         : `https://ui-avatars.com/api/?name=${u.firstName || u.username}&background=random&color=fff`
                     }
                     alt={u.username}
@@ -368,7 +368,10 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
                       >
                         <div className="overflow-hidden rounded-2xl mb-3 h-52 bg-surface-low">
                           <img
-                            src={`${import.meta.env.VITE_API_IMG_URL}/${item.coverImage}`}
+                            src={
+                              item.coverImage ||
+                              import.meta.env.VITE_DEFAULT_COVER
+                            }
                             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                             alt={item.title}
                           />

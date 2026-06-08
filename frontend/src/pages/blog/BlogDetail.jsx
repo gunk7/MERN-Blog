@@ -73,8 +73,7 @@ const BlogDetail = () => {
     .replace(/<div id="upload-[^"]*".*?<\/div>/gs, "")
     .replace(/<div style="color:red">.*?<\/div>/gs, "");
 
-  const hasCover =
-    currentBlog.coverImage && !currentBlog.coverImage.includes("default-cover");
+  const hasCover = Boolean(currentBlog.coverImage);
 
   const coverHeight = 580;
   const parallaxOffset = scrollY * 0.35;
@@ -153,7 +152,7 @@ const BlogDetail = () => {
           style={{ height: `${coverHeight}px` }}
         >
           <img
-            src={`${import.meta.env.VITE_API_IMG_URL}/${currentBlog.coverImage}`}
+            src={currentBlog.coverImage}
             alt="Cover"
             style={{
               position: "absolute",
@@ -253,7 +252,7 @@ const BlogDetail = () => {
               <img
                 src={
                   currentBlog.author?.profile?.profilePic
-                    ? `${import.meta.env.VITE_API_IMG_URL}/${currentBlog.author.profile.profilePic}`
+                    ? currentBlog.author.profile.profilePic // ← already absolute URL
                     : `https://ui-avatars.com/api/?name=${currentBlog.author?.profile?.firstName || "A"}&background=random&color=fff`
                 }
                 className="w-11 h-11 rounded-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all border border-primary/20"

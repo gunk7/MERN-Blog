@@ -39,6 +39,7 @@ const invoiceSchema = new mongoose.Schema(
     stripeInvoiceId: { type: String },
     stripeInvoicePdfUrl: { type: String },
     pdfUrl: { type: String, default: null },
+    pdfPublicId: { type: String, default: null },
     paidAt: { type: Date },
   },
   { timestamps: true },

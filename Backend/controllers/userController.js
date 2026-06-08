@@ -6,6 +6,7 @@ const aggregatePaginate = require("../utils/aggregate");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const { DEFAULT_AVATAR } = require("../config/defaults");
 
 //Admin Dashboard
 exports.getAllUsers = async (req, res) => {
@@ -31,6 +32,7 @@ exports.getAllUsers = async (req, res) => {
       searchCriteria = [{ username: regex }];
     } else {
       searchCriteria = [
+        { username: regex },
         { firstName: regex },
         { lastName: regex },
         { email: regex },
@@ -140,7 +142,7 @@ exports.updateUserProfile = async (req, res) => {
       userId: targetUserId,
     });
 
-    if (req.file || removeImage === "true") {
+    /* if (req.file || removeImage === "true") {
       // Delete old image if exists
       if (currentUserDetail?.profilePic) {
         const oldPath = path.resolve(currentUserDetail.profilePic);
@@ -163,8 +165,30 @@ exports.updateUserProfile = async (req, res) => {
       } else if (req.file) {
         profilePicPath = req.file.path.replace(/\\/g, "/");
       }
-    }
+    } */
 
+    if (req.cloudinaryFile || removeImage === "true") {
+      //delete old image
+      if (
+        currentUserDetail?.profilePicPublicId &&
+        !currentUserDetail?.profilePic.includes("blank.jpg")
+      ) {
+        try {
+          await cloudinary.uploader.destroy(
+            currentUserDetail.profilePicPublicId,
+          );
+        } catch (error) {
+          console.error("Failed to delete Old Image from the cloudinary");
+        }
+      }
+      if (removeImage === "true") {
+        profilePicUrl = DEFAULT_AVATAR; // or a default blank URL from Cloudinary
+        profilePicPublicId = null;
+      } else if (req.cloudinaryFile) {
+        profilePicUrl = req.cloudinaryFile.secure_url;
+        profilePicPublicId = req.cloudinaryFile.public_id;
+      }
+    }
     // -------------------------------
     // 🔹 Prepare Update Objects
     // -------------------------------
@@ -189,6 +213,7 @@ exports.updateUserProfile = async (req, res) => {
       gender,
       country,
       ...(profilePicPath && { profilePic: profilePicPath }),
+      ...(profilePicPublicId !== undefined && { profilePicPublicId }),
     };
 
     const userDetailUpdatePromise = userDetail.findOneAndUpdate(
@@ -356,7 +381,7 @@ exports.getMyProfile = async (req, res) => {
 
     if (!userProfile) {
       userProfile = {
-        _id:userId,
+        _id: userId,
         firstName: "Guest",
         lastName: "User",
         email: user.email,
@@ -681,10 +706,10 @@ exports.getAdminProfile = async (req, res) => {
   try {
     const adminId = new mongoose.Types.ObjectId(req.user._id);
     const admin = await userModel
-    .findOne({ _id: adminId, role: "admin" })
-    .select(
-      "_id email username role isAccountVerified authProviders createdAt",
-    );
+      .findOne({ _id: adminId, role: "admin" })
+      .select(
+        "_id email username role isAccountVerified authProviders createdAt",
+      );
     if (!admin) {
       return res.status(404).json({
         success: false,

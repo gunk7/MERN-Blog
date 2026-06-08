@@ -229,7 +229,7 @@ const MyBlogs = () => {
                 className="w-full md:w-48 h-32 shrink-0 rounded-lg overflow-hidden cursor-pointer shadow-sm border border-primary/5"
               >
                 <img
-                  src={`${import.meta.env.VITE_API_IMG_URL}/${blog.coverImage}`}
+                  src={blog.coverImage}
                   alt=""
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />

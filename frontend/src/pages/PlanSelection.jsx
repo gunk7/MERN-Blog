@@ -45,9 +45,6 @@ const MOCK_PLANS = [
     },
     limits: {
       monthlyTokens: 50000,
-      dailyAiRequests: 15,
-      maxInputChars: 3000,
-      maxSummaryChars: 10000,
     },
     isActive: true,
     slug: "free-a69b825b8574",
@@ -71,9 +68,6 @@ const MOCK_PLANS = [
     },
     limits: {
       monthlyTokens: 300000,
-      dailyAiRequests: 100,
-      maxInputChars: 15000,
-      maxSummaryChars: 50000,
     },
     isActive: false,
     slug: "pro",
@@ -95,9 +89,6 @@ const MOCK_PLANS = [
     },
     limits: {
       monthlyTokens: 1000000,
-      dailyAiRequests: 500,
-      maxInputChars: 50000,
-      maxSummaryChars: 200000,
     },
     isActive: false,
     slug: "enterprise",
@@ -270,7 +261,7 @@ function PlanCard({ plan, selected, onSelect }) {
           className="mt-auto pt-4 flex flex-col gap-1.5"
           style={{ borderTop: "1px solid rgba(106,81,136,0.1)" }}
         >
-          {Object.entries(plan.limits).map(([key, val]) => (
+          {Object.entries(plan.limit).map(([key, val]) => (
             <div key={key} className="flex items-center gap-1.5">
               <span className="text-[11px]" style={{ color: "#8e74ae" }}>
                 •
@@ -298,6 +289,7 @@ export default function PlanSelection({ onContinue, userName = "" }) {
     const fetchPlans = async () => {
       try {
         const { data } = await API.get("/plans/all");
+        console.log("PLans:", data);
         if (data.success) {
           setPlans(data.data);
           const free = data.data.find((p) => p.price === 0);

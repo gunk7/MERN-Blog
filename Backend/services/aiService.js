@@ -161,7 +161,10 @@ async function writingAssist({ text, action, tone }) {
   const { text: rewritten, usage } = await generateResponse(
     buildWritingPrompt(text, action, tone),
   );
-  return { result: rewritten, usage };
+  return {
+    result: rewritten,
+    tokenCount: usage?.totalTokenCount || Math.ceil(text.length / 4),
+  };
 }
 
 async function generateTags({ text }) {
@@ -179,7 +182,7 @@ async function generateTags({ text }) {
   if (tags.some((t) => typeof t !== "string"))
     throw new Error("Tags must be strings");
 
-  return { tags, usage };
+  return { tags, tokenCount: usage?.totalTokenCount || Math.ceil(text.length / 4)  };
 }
 
 async function generateSummary({ text, isSelection = false }) {
@@ -191,7 +194,7 @@ async function generateSummary({ text, isSelection = false }) {
   const { text: summaryText, usage } = await generateResponse(
     buildSummaryPrompt(text, isSelection),
   );
-  return { summary: summaryText, usage };
+  return { summary: summaryText, tokenCount: usage?.totalTokenCount || Math.ceil(text.length / 4) };
 }
 
 module.exports = { chat, writingAssist, generateTags, generateSummary };

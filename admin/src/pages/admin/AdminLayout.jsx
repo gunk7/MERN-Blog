@@ -10,6 +10,9 @@ import {
   ChevronLeft,
   Menu,
   X,
+  Calendar,
+  CurrencyIcon,
+  HandCoins,
 } from "lucide-react";
 import { logout } from "../../redux/slice/authSlice";
 import { selectCurrentUser } from "../../redux/selectors/authSelectors";
@@ -35,6 +38,18 @@ const AdminLayout = () => {
     { to: "/users", icon: <Users size={16} />, label: "Users" },
     { to: "/blogs", icon: <FileText size={16} />, label: "Posts" },
     { to: "/plans", icon: <CreditCard size={16} />, label: "Plans" },
+    {
+      to: "/subscriptions",
+      icon: <Calendar size={16} />,
+      label: "Subscriptions",
+    },
+    {
+      to: "/transactions",
+      icon: <CurrencyIcon size={16} />,
+      label: "Transactions",
+    },
+    ,
+    { to: "/refund", icon: <HandCoins size={16} />, label: "Refund " },
   ];
 
   const NavContent = ({ isMobile = false }) => (

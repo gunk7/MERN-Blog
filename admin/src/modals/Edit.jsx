@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { isLoggedIn, selectCurrentUser } from "../redux/selectors/authSelectors";
+import {
+  isLoggedIn,
+  selectCurrentUser,
+} from "../redux/selectors/authSelectors";
 import { useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { editProfileSchema } from "../validation/schemasValidation";
 import { getProfile, updateProfile } from "../redux/thunks/userThunks";
 import { X, Save, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
-import { updateProfileByAdmin, fetchAllUsers } from "../redux/thunks/adminThunks";
+import {
+  updateProfileByAdmin,
+  fetchAllUsers,
+} from "../redux/thunks/adminThunks";
 import API from "../services/axios";
 import { isUsernameUnsuitable } from "../services/apiService";
 
@@ -33,7 +39,9 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
   useEffect(() => {
     const getCountries = async () => {
       try {
-        const { data } = await API.get("https://restcountries.com/v3.1/all?fields=name");
+        const { data } = await API.get(
+          "https://restcountries.com/v3.1/all?fields=name",
+        );
         setCountries(data.map((c) => c.name.common).sort());
       } catch (error) {
         console.error("Error fetching countries:", error);
@@ -62,38 +70,44 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
     enableReinitialize: true,
     validateOnMount: false,
     initialValues: {
-      username:  currentData?.username  || user?.username || "",
+      username: currentData?.username || user?.username || "",
       firstName: currentData?.firstName || "",
-      lastName:  currentData?.lastName  || "",
+      lastName: currentData?.lastName || "",
       dob: currentData?.dob
         ? new Date(currentData.dob).toISOString().split("T")[0]
         : "",
-      gender:  currentData?.gender  || "Prefer not to say",
+      gender: currentData?.gender || "Prefer not to say",
       country: currentData?.country || "",
-      bio:     currentData?.bio     || "",
+      bio: currentData?.bio || "",
     },
     validationSchema: editProfileSchema,
     onSubmit: async (values) => {
       try {
-        const targetId = adminSelected?._id || profile?.userDetail?._id || user?._id;
+        const targetId =
+          adminSelected?._id || profile?.userDetail?._id || user?._id;
         if (!targetId) return toast.error("User ID not found.");
 
         if (values.username !== currentData?.username) {
           const isBad = await isUsernameUnsuitable(values.username);
-          if (isBad) return toast.error("Please choose a more appropriate username.");
+          if (isBad)
+            return toast.error("Please choose a more appropriate username.");
         }
 
         const formData = new FormData();
         Object.keys(values).forEach((key) => formData.append(key, values[key]));
-        if (selectedImage)  formData.append("profilePic", selectedImage);
-        if (removeImage)    formData.append("removeImage", "true");
+        if (selectedImage) formData.append("profilePic", selectedImage);
+        if (removeImage) formData.append("removeImage", "true");
 
         if (adminSelected) {
-          await dispatch(updateProfileByAdmin({ userId: targetId, userData: formData })).unwrap();
+          await dispatch(
+            updateProfileByAdmin({ userId: targetId, userData: formData }),
+          ).unwrap();
           toast.success("Profile updated by Admin successfully");
           dispatch(fetchAllUsers({ page: 1, limit: 10 }));
         } else {
-          await dispatch(updateProfile({ userId: targetId, userData: formData })).unwrap();
+          await dispatch(
+            updateProfile({ userId: targetId, userData: formData }),
+          ).unwrap();
           toast.success("Profile updated successfully");
           dispatch(getProfile());
         }
@@ -111,7 +125,7 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
       Object.keys(formik.values).reduce((acc, key) => {
         acc[key] = true;
         return acc;
-      }, {})
+      }, {}),
     );
     formik.submitForm();
   };
@@ -123,19 +137,26 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/20 backdrop-blur-md">
       <div className="card-auth max-w-2xl w-full h-[90vh] flex flex-col relative">
-
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-primary/10 sticky top-0 bg-card z-10">
-          <h2 className="font-display text-xl font-bold text-on-surface">Edit Identity</h2>
-          <button onClick={onClose} className="text-on-surface-variant hover:text-primary">
+          <h2 className="font-display text-xl font-bold text-on-surface">
+            Edit Identity
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-on-surface-variant hover:text-primary"
+          >
             <X size={22} />
           </button>
         </div>
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-6">
-          <form id="editProfileForm" onSubmit={formik.handleSubmit} className="space-y-6">
-
+          <form
+            id="editProfileForm"
+            onSubmit={formik.handleSubmit}
+            className="space-y-6"
+          >
             {/* Profile pic */}
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
@@ -143,16 +164,14 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
                   src={
                     preview
                       ? preview
-                      : removeImage
-                        ? `${BASE_URL}/uploads/images/profilePics/blank.jpg`
-                        : currentData?.profilePic
-                          ? `${BASE_URL}/${currentData.profilePic}`
-                          : `${BASE_URL}/uploads/images/profilePics/blank.jpg`
+                      : currentData?.profilePic && !removeImage
+                        ? currentData.profilePic
+                        : import.meta.env.VITE_DEFAULT_AVATAR
                   }
                   alt="profile"
                   className="w-20 h-20 rounded-full object-cover border"
                 />
-                {(preview || (currentData?.profilePic && !currentData.profilePic.includes("blank.jpg"))) && !removeImage && (
+                {(preview || currentData?.profilePic) && !removeImage && (
                   <button
                     type="button"
                     onClick={handleRemoveImage}
@@ -164,17 +183,26 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               </div>
               <label className="btn-editorial cursor-pointer">
                 Upload
-                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
               </label>
             </div>
 
             {/* Form fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-
               {/* Username */}
-              <Field label="Username" error={formik.touched.username && formik.errors.username}>
+              <Field
+                label="Username"
+                error={formik.touched.username && formik.errors.username}
+              >
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">@</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-bold">
+                    @
+                  </span>
                   <input
                     name="username"
                     type="text"
@@ -185,7 +213,10 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               </Field>
 
               {/* First Name */}
-              <Field label="First Name" error={formik.touched.firstName && formik.errors.firstName}>
+              <Field
+                label="First Name"
+                error={formik.touched.firstName && formik.errors.firstName}
+              >
                 <input
                   name="firstName"
                   {...formik.getFieldProps("firstName")}
@@ -194,7 +225,10 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               </Field>
 
               {/* Last Name */}
-              <Field label="Last Name" error={formik.touched.lastName && formik.errors.lastName}>
+              <Field
+                label="Last Name"
+                error={formik.touched.lastName && formik.errors.lastName}
+              >
                 <input
                   name="lastName"
                   {...formik.getFieldProps("lastName")}
@@ -203,7 +237,10 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               </Field>
 
               {/* Gender */}
-              <Field label="Gender" error={formik.touched.gender && formik.errors.gender}>
+              <Field
+                label="Gender"
+                error={formik.touched.gender && formik.errors.gender}
+              >
                 <select
                   name="gender"
                   {...formik.getFieldProps("gender")}
@@ -217,7 +254,10 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               </Field>
 
               {/* Country */}
-              <Field label="Country" error={formik.touched.country && formik.errors.country}>
+              <Field
+                label="Country"
+                error={formik.touched.country && formik.errors.country}
+              >
                 <select
                   name="country"
                   {...formik.getFieldProps("country")}
@@ -225,13 +265,19 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
                 >
                   <option value="">Select Country</option>
                   {countries.map((name) => (
-                    <option key={name} value={name}>{name}</option>
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
                   ))}
                 </select>
               </Field>
 
               {/* Date of Birth */}
-              <Field label="Date of Birth" error={formik.touched.dob && formik.errors.dob} fullWidth>
+              <Field
+                label="Date of Birth"
+                error={formik.touched.dob && formik.errors.dob}
+                fullWidth
+              >
                 <input
                   type="date"
                   name="dob"
@@ -251,7 +297,6 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
                 className={`input-editorial py-3 ${formik.touched.bio && formik.errors.bio ? "border-red-400" : ""}`}
               />
             </Field>
-
           </form>
         </div>
 
@@ -267,7 +312,9 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
               {loading ? (
                 <Loader2 className="animate-spin" size={20} />
               ) : (
-                <><Save size={20} /> Save Identity</>
+                <>
+                  <Save size={20} /> Save Identity
+                </>
               )}
             </button>
             <button
@@ -292,9 +339,7 @@ const Field = ({ label, error, fullWidth, children }) => (
       {label}
     </label>
     {children}
-    {error && (
-      <span className="text-[10px] text-red-500 mt-0.5">{error}</span>
-    )}
+    {error && <span className="text-[10px] text-red-500 mt-0.5">{error}</span>}
   </div>
 );
 

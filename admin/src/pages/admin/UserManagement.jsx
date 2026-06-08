@@ -175,9 +175,6 @@ const UserManagement = () => {
     [currentUser, dispatch],
   );
 
-  const imgUrl = import.meta.env.VITE_API_IMG_URL;
-  const defaultAvatar = `${imgUrl}
-            /uploads/images/profilePics/blank.jpg`;
   const columns = useMemo(
     () => [
       {
@@ -193,7 +190,7 @@ const UserManagement = () => {
             <img
               src={
                 row.original.profilePic
-                  ? `${imgUrl}/${row.original.profilePic}`
+                  ? row.original.profilePic
                   : defaultAvatar || "/src/assets/image.png"
               }
               onError={(e) => {
@@ -285,7 +282,6 @@ const UserManagement = () => {
                     </svg>
                   )}
                 </span>
-                
               </button>
             </div>
           );
@@ -314,7 +310,7 @@ const UserManagement = () => {
         ),
       },
     ],
-    [imgUrl, navigate, handleToggleVerify, handleDelete, handleEdit],
+    [navigate, handleToggleVerify, handleDelete, handleEdit],
   );
 
   const table = useReactTable({
@@ -338,6 +334,8 @@ const UserManagement = () => {
     manualPagination: true,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const defaultAvatar = import.meta.env.VITE_DEFAULT_AVATAR;
 
   return (
     <div className="min-h-screen bg-surface p-6 sm:p-8 flex flex-col gap-6">

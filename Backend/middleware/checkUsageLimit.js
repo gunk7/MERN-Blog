@@ -1,5 +1,6 @@
 const Subscription = require("../models/subscriptionModel");
 const UsageLog = require("../models/usageModel");
+const AddonPurchase = require("../models/addonPurchaseModel");
 
 const FREE_PLAN = {
   features: {
@@ -9,12 +10,8 @@ const FREE_PLAN = {
     tagsGeneration: true,
     analyticsAccess: false,
   },
-  limits: {
+  limit: {
     monthlyTokens: 50000,
-    writingAssistHits: 0,
-    summaryHits: 5,
-    tagHits: 20,
-    maxInputChars: 2000,
   },
 };
 
@@ -29,69 +26,57 @@ function checkUsageLimit(feature) {
       const userId = req.user.id;
       const month = getCurrentMonth();
 
-      // Load active subscription
       const subscription = await Subscription.findOne({
         userId,
-        status: { $in: ["active", "trialing","cancelled"] },
+        status: { $in: ["active", "trialing", "cancelled"] },
         endDate: { $gt: new Date() },
       }).lean();
 
       const plan = subscription ? subscription.planSnapshot : FREE_PLAN;
 
-      // Check feature access
-      if (!plan.features[feature]) {
+      // 1. Feature gate
+      if (plan.features[feature] === false) {
         return res.status(403).json({
           success: false,
-          message: `This feature requires a Pro plan.`,
+          message: "This feature requires a higher plan.",
         });
       }
 
-      // Load usage log
-      const usage = (await UsageLog.findOne({ userId, month })) || {
-        chatTokens: 0,
-        writingAssistHits: 0,
-        summaryHits: 0,
-        tagHits: 0,
-      };
+      // 2. Token limit
+      const usage = subscription
+        ? await UsageLog.findOne({
+            userId,
+            subscriptionId: subscription._id,
+            month,
+          }).lean()
+        : null;
 
-      // Check limits per feature
-      if (feature === "aiChat") {
-        if (usage.chatTokens >= plan.limits.monthlyTokens) {
+      const totalUsed =
+        (usage?.tokensUsed || 0) + (usage?.addOnTokensUsed || 0);
+
+      if (totalUsed >= plan.limit.monthlyTokens) {
+        // Only now check for addon tokens
+        const activeAddon = await AddonPurchase.findOne({
+          userId,
+          status: "active",
+          expiresAt: { $gt: new Date() },
+          tokensRemaining: { $gt: 0 },
+        }).lean();
+
+        if (!activeAddon) {
           return res.status(429).json({
             success: false,
-            message: "Monthly chat token limit reached. Upgrade or wait until next month.",
+            message:
+              "Monthly token limit reached. Purchase an addon pack or upgrade your plan.",
           });
         }
+
+        // Has addon tokens — flag for usage handler to deduct from addon
+        req.useAddonTokens = true;
+        req.activeAddon = activeAddon;
       }
 
-      if (feature === "writingAssist") {
-        if (usage.writingAssistHits >= plan.limits.writingAssistHits) {
-          return res.status(429).json({
-            success: false,
-            message: `Writing assist limit reached (${plan.limits.writingAssistHits}/month).`,
-          });
-        }
-      }
-
-      if (feature === "aiSummary") {
-        if (usage.summaryHits >= plan.limits.summaryHits) {
-          return res.status(429).json({
-            success: false,
-            message: `Summary limit reached (${plan.limits.summaryHits}/month).`,
-          });
-        }
-      }
-
-      if (feature === "tagsGeneration") {
-        if (usage.tagHits >= plan.limits.tagHits) {
-          return res.status(429).json({
-            success: false,
-            message: `Tag generation limit reached (${plan.limits.tagHits}/month).`,
-          });
-        }
-      }
-
-      // Attach to request for handlers to use
+      // Attach to request for handlers
       req.plan = plan;
       req.subscriptionId = subscription?._id || null;
       next();

@@ -537,6 +537,56 @@ const emailTemplates = {
       `,
     }),
   }),
+
+  refundSubmitted: () => ({
+    subject: "📋 Refund Request Received | Wavelog",
+    html: buildTemplate({
+      title: "Request Received",
+      subtitle: "Your refund request has been submitted and is under review.",
+      body: `
+      <div class="section-card">
+        <div class="icon-circle">⏳</div>
+        <p style="text-align:center; font-size:17px; line-height:1.9; color:${brand.textSecondary}; margin:0;">
+          Our team will review your request and notify you by email once a decision has been made.
+        </p>
+      </div>
+    `,
+    }),
+  }),
+
+  refundResolved: (username, approved, refundAmount, userMessage) => ({
+    subject: approved
+      ? "✅ Your Refund Has Been Processed | Wavelog"
+      : "Update on Your Refund Request | Wavelog",
+    html: buildTemplate({
+      title: approved ? "Refund Approved" : "Refund Request Update",
+      subtitle: approved
+        ? "Your refund has been processed successfully."
+        : "We've reviewed your refund request.",
+      body: `
+      <div class="section-card">
+        <div class="icon-circle">${approved ? "✓" : "ℹ"}</div>
+        <p style="text-align:center; font-size:17px; line-height:1.9; color:${brand.textSecondary}; margin:0;">
+          Hi <strong style="color:${brand.text}">${username}</strong>,
+          <br/>${userMessage}
+        </p>
+        ${
+          approved
+            ? `
+        <div style="margin-top:24px; padding:18px 20px; background:${brand.surfaceLow}; border:1px solid ${brand.border}; border-radius:20px; text-align:center;">
+          <p style="margin:0; font-size:15px; color:${brand.textSecondary};">Refund Amount</p>
+          <p style="margin:6px 0 0; font-size:28px; font-weight:bold; color:${brand.primary};">₹${refundAmount}</p>
+          <p style="margin:8px 0 0; font-size:13px; color:${brand.textSecondary};">May take 5–7 business days to reflect.</p>
+        </div>`
+            : ""
+        }
+        <div style="margin-top:20px; padding:18px 20px; background:#fff5f5; border:1px solid #f5c2c7; border-radius:20px; color:${brand.danger}; font-size:14px; line-height:1.7;">
+          Your subscription has been cancelled as part of this process.
+        </div>
+      </div>
+    `,
+    }),
+  }),
 };
 
 module.exports = emailTemplates;

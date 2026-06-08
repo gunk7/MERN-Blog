@@ -112,17 +112,14 @@ const Icon = {
 const planSchema = Yup.object({
   name: Yup.string().min(2).max(60).required("Name is required"),
   description: Yup.string().max(300),
+  type: Yup.string().oneOf(["base", "add_on"]).required(),
   price: Yup.number().min(0).required("Price is required"),
   durationDays: Yup.number().min(1).integer().required("Duration is required"),
   interval: Yup.string()
     .oneOf(["monthly", "quarterly", "yearly", "one_time"])
     .required(),
   status: Yup.string().oneOf(["active", "archived", "draft"]).required(),
-  "limits.monthlyTokens": Yup.number().min(0),
-  "limits.writingAssistHits": Yup.number().min(0),
-  "limits.summaryHits": Yup.number().min(0),
-  "limits.tagHits": Yup.number().min(0),
-  "limits.maxInputChars": Yup.number().min(0),
+  "limit.monthlyTokens": Yup.number().min(0),
   "features.aiChat": Yup.boolean(),
   "features.aiSummary": Yup.boolean(),
   "features.writingAssist": Yup.boolean(),
@@ -133,15 +130,14 @@ const planSchema = Yup.object({
 const EMPTY_PLAN = {
   name: "",
   description: "",
+  type: "base",
   price: 0,
   durationDays: 30,
   interval: "monthly",
   status: "active",
-  "limits.monthlyTokens": 0,
-  "limits.writingAssistHits": 0,
-  "limits.summaryHits": 0,
-  "limits.tagHits": 0,
-  "limits.maxInputChars": 2000,
+
+  "limit.monthlyTokens": 0,
+
   "features.aiChat": false,
   "features.aiSummary": false,
   "features.writingAssist": false,
@@ -153,16 +149,13 @@ function planToFormValues(plan) {
   if (!plan) return EMPTY_PLAN;
   return {
     name: plan.name || "",
+    type: plan.type || "",
     description: plan.description || "",
     price: plan.price ?? 0,
     durationDays: plan.durationDays ?? 30,
     interval: plan.interval || "monthly",
     status: plan.status || "active",
-    "limits.monthlyTokens": plan.limits?.monthlyTokens ?? 0,
-    "limits.writingAssistHits": plan.limits?.writingAssistHits ?? 0,
-    "limits.summaryHits": plan.limits?.summaryHits ?? 0,
-    "limits.tagHits": plan.limits?.tagHits ?? 0,
-    "limits.maxInputChars": plan.limits?.maxInputChars ?? 2000,
+    "limit.monthlyTokens": plan.limit?.monthlyTokens ?? 0,
     "features.aiChat": plan.features?.aiChat ?? false,
     "features.aiSummary": plan.features?.aiSummary ?? false,
     "features.writingAssist": plan.features?.writingAssist ?? false,
@@ -175,17 +168,16 @@ function formValuesToPayload(vals) {
   return {
     name: vals.name,
     description: vals.description,
+    type: vals.type,
     price: Number(vals.price),
     durationDays: Number(vals.durationDays),
     interval: vals.interval,
     status: vals.status,
-    limits: {
-      monthlyTokens: Number(vals["limits.monthlyTokens"]),
-      writingAssistHits: Number(vals["limits.writingAssistHits"]),
-      summaryHits: Number(vals["limits.summaryHits"]),
-      tagHits: Number(vals["limits.tagHits"]),
-      maxInputChars: Number(vals["limits.maxInputChars"]),
+
+    limit: {
+      monthlyTokens: Number(vals["limit.monthlyTokens"]),
     },
+
     features: {
       aiChat: vals["features.aiChat"],
       aiSummary: vals["features.aiSummary"],
@@ -269,10 +261,10 @@ function ViewModal({ plan, onClose, onEdit }) {
         )}
         <div className="mb-4">
           <p className="text-xs uppercase tracking-widest text-on-surface-variant mb-2">
-            Limits
+            limit
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            {Object.entries(plan.limits || {}).map(([k, v]) => (
+            {Object.entries(plan.limit || {}).map(([k, v]) => (
               <div
                 key={k}
                 className="flex justify-between bg-surface-lowest border border-surface-highest rounded-xl p-2"
@@ -419,45 +411,25 @@ function PlanFormModal({ plan, onClose, onSuccess, loading }) {
               min={1}
             />
           </div>
+
           <div className="grid grid-cols-2 gap-4">
+           s
+
             <Select
               name="interval"
               label="Interval"
               options={["monthly", "quarterly", "yearly", "one_time"]}
-            />
-            <Select
-              name="status"
-              label="Status"
-              options={["active", "draft", "archived"]}
+              disabled={formik.values.plan == 0}
             />
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-on-surface-variant mb-2">
-              Limits
+              limit
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <F
-                name="limits.monthlyTokens"
-                label="Monthly Tokens (chat)"
-                type="number"
-                min={0}
-              />
-              <F
-                name="limits.writingAssistHits"
-                label="Writing Assist Hits"
-                type="number"
-                min={0}
-              />
-              <F
-                name="limits.summaryHits"
-                label="Summary Hits"
-                type="number"
-                min={0}
-              />
-              <F name="limits.tagHits" label="Tag Hits" type="number" min={0} />
-              <F
-                name="limits.maxInputChars"
-                label="Max Input Chars"
+                name="limit.monthlyTokens"
+                label="Monthly Tokens"
                 type="number"
                 min={0}
               />
@@ -591,8 +563,12 @@ export default function AdminPlansPage() {
           const count = Object.values(row.original.features || {}).filter(
             Boolean,
           ).length;
+          const total = Object.keys(row.original.features || {}).length;
+
           return (
-            <span className="text-xs font-bold text-primary">{count} / 5</span>
+            <span className="text-xs font-bold text-primary">
+              {count} / {total}
+            </span>
           );
         },
       },

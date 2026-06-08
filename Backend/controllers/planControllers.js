@@ -5,7 +5,9 @@ exports.getPlans = async (req, res) => {
     const loggedInUser = req.user;
     const isAdmin = loggedInUser?.role === "admin";
 
-    const filter = isAdmin ? {} : { isActive: true, isDeleted: false };
+    const filter = isAdmin
+      ? {}
+      : { isActive: true, isDeleted: false, type: "base" };
 
     const plans = await Plan.find(filter).sort({ price: 1 }).lean();
     res.status(200).json({
@@ -296,10 +298,7 @@ exports.getPlanStats = async (req, res) => {
             planCount: { $sum: 1 },
             totalPrice: { $sum: "$price" },
             avgPrice: { $avg: "$price" },
-            avgMonthlyTokens: { $avg: "$limits.monthlyTokens" },
-            avgWritingAssistHits: { $avg: "$limits.writingAssistHits" },
-            avgSummaryHits: { $avg: "$limits.summaryHits" },
-            avgTagHits: { $avg: "$limits.tagHits" },
+            avgMonthlyTokens: { $avg: "$limit.monthlyTokens" },
           },
         },
         { $sort: { avgPrice: -1 } },
@@ -331,7 +330,7 @@ exports.getPlanStats = async (req, res) => {
 
       // 7. Top 5 most feature-rich paid plans
       Plan.find({ isDeleted: false, price: { $gt: 0 } })
-        .select("name slug price interval status features limits")
+        .select("name slug price interval status features limit")
         .sort({ price: -1 })
         .limit(5)
         .lean(),

@@ -3,6 +3,10 @@ const route = express.Router();
 const adminController = require("../controllers/userController");
 const adminBlogController = require("../controllers/blogController");
 const adminPlanController = require("../controllers/planControllers");
+const adminSubController = require("../controllers/subControllers");
+const adminTransController = require("../controllers/transController");
+const adminUsageController = require("../controllers/usageControllers");
+const adminRefundController= require("../controllers/refundRequestControllers")
 const { isAdmin } = require("../middleware/adminMiddlware");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { uploadSingleImage } = require("../middleware/multerMiddlware");
@@ -48,12 +52,49 @@ route.get("/stats/activity", adminBlogController.getActivityChart);
 route.get("/plan/stats/plans", adminPlanController.getPlanStats); // ← moved above /:id
 route.get("/plan", adminPlanController.getPlans);
 route.get("/plan/:id", validateObjectId("id"), adminPlanController.getPlanById);
-route.post("/create-plan", validate(createPlanSchema), adminPlanController.createPlan);
+route.post(
+  "/create-plan",
+  validate(createPlanSchema),
+  adminPlanController.createPlan,
+);
 route.patch(
   "/:id",
   validateObjectId("id"),
   validate(updatePlanSchema),
   adminPlanController.updatePlan,
 );
-route.delete("/:id", validateObjectId("id"), adminPlanController.deletePlan);
+
+//Subscription management routes (admin)
+route.get("/subscription/all", adminSubController.getAllSubscriptions);
+route.get("/subscription/stats", adminSubController.getSubscriptionStats);
+
+//transaction management routes (admin)
+route.get("/transactions/all", adminTransController.getAllTransactions);
+route.get("/transactions/stats", adminTransController.getTransactionStats);
+route.get(
+  "/transactions/:id",
+  validateObjectId("id"),
+  adminTransController.getTransactionById,
+);
+//usage management routes (admin)
+route.get("/usage/all", adminUsageController.getAllUsage);
+route.get(
+  "/usage/:id",
+  validateObjectId("id"),
+  adminUsageController.getUserUsageById,
+);
+
+//refund management routes (admin)
+route.get("/refunds/all", adminRefundController.getAllRefundRequests);
+route.get(
+  "/refunds/:id",
+  validateObjectId("id"),
+  adminRefundController.getRefundRequestById,
+);
+route.patch(
+  "/refunds/:id/resolve",
+  validateObjectId("id"),
+  adminRefundController.resolveRefundRequest,
+);
+
 module.exports = route;

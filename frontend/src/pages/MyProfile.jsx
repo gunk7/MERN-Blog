@@ -76,7 +76,7 @@ const MyProfile = () => {
               <img
                 src={
                   userDetail?.profilePic
-                    ? `${import.meta.env.VITE_API_IMG_URL}/${userDetail.profilePic}`
+                    ? userDetail.profilePic
                     : "/src/assets/image.png"
                 }
                 alt="Profile"
@@ -224,17 +224,34 @@ function TabContent({ activeTab, userDetail, navigate, authUser }) {
 }
 
 // ── profile tab extracted into its own component ──────────────────────────────
+// ── profile tab extracted into its own component ──────────────────────────────
 function ProfileTab({ userDetail }) {
   const [isPwdOpen, setIsPwdOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="bg-white p-8 md:p-12 rounded-[4rem] border border-slate-100 shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+    <div className="flex flex-col gap-6 mt-8">
+      {/* ── Personal details + bio ─────────────────────────────────────── */}
+      <div className="bg-white p-10 md:p-14 rounded-[4rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500">
+              Personal
+            </span>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tighter mt-1">
+              Profile Details
+            </h2>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-2xl">
+            <User size={20} className="text-fuchsia-700" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* LEFT — detail rows */}
           <div className="bg-indigo-50/30 p-8 rounded-[3rem] border border-indigo-100/20 space-y-6">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+            <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
               Personnel Details
-            </h3>
+            </p>
             <div className="space-y-5">
               <DetailRow label="Email" value={userDetail?.email} />
               <DetailRow label="Country" value={userDetail?.country} />
@@ -253,61 +270,79 @@ function ProfileTab({ userDetail }) {
               />
             </div>
           </div>
+
+          {/* RIGHT — bio + stats */}
           <div className="space-y-6">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500 flex items-center gap-2">
-              <span className="w-6 h-0.5 bg-indigo-100" /> About Me
-            </h3>
-            <p className="text-2xl font-bold text-slate-800 leading-relaxed">
-              {userDetail?.bio || "No biography provided yet."}
-            </p>
+            <div className="space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
+                About Me
+              </p>
+              <p className="text-xl font-bold text-slate-800 leading-relaxed">
+                {userDetail?.bio || "No biography provided yet."}
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <p className="text-[9px] font-black uppercase tracking-widest text-indigo-400">
+                Activity
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <StatPill
+                  icon={<Users size={14} className="text-blue-500" />}
+                  count={userDetail?.followersCount ?? 0}
+                  label="Followers"
+                />
+                <StatPill
+                  icon={<ArrowUpRight size={14} className="text-emerald-500" />}
+                  count={userDetail?.followingCount ?? 0}
+                  label="Following"
+                />
+                <StatPill
+                  icon={<Calendar size={14} className="text-amber-500" />}
+                  count={
+                    userDetail?.createdAt
+                      ? new Date(userDetail.createdAt).toLocaleDateString(
+                          "en-GB",
+                          { month: "short", year: "numeric" },
+                        )
+                      : "—"
+                  }
+                  label="Joined"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-4">
-          <StatCard
-            icon={<Users className="text-blue-500" />}
-            count={userDetail?.followersCount}
-            label="Followers"
-          />
-          <StatCard
-            icon={<ArrowUpRight className="text-emerald-500" />}
-            count={userDetail?.followingCount}
-            label="Following"
-          />
-          <StatCard
-            icon={<Calendar className="text-amber-500" />}
-            count={
-              userDetail?.createdAt
-                ? new Date(userDetail.createdAt).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "—"
-            }
-            label="Joined"
-          />
+      {/* ── Account settings ───────────────────────────────────────────── */}
+      <div className="bg-white p-10 md:p-14 rounded-[4rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-500">
+              Security
+            </span>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tighter mt-1">
+              Account Settings
+            </h2>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-2xl">
+            <Lock size={20} className="text-slate-400" />
+          </div>
         </div>
 
-        <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-4 h-fit">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-2 mb-2">
-            Account Settings
-          </h3>
-          <button
-            onClick={() => setIsPwdOpen(true)}
-            className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-fuchsia-900 hover:text-white rounded-2xl transition-all group"
-          >
-            <div className="flex items-center gap-3 font-bold text-sm">
-              <Lock size={16} /> Change Password
-            </div>
-            <ChevronRight
-              size={16}
-              className="opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all"
-            />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsPwdOpen(true)}
+          className="w-full flex items-center justify-between p-5 bg-slate-50 hover:bg-fuchsia-900 hover:text-white rounded-2xl transition-all group"
+        >
+          <div className="flex items-center gap-3 font-bold text-sm text-slate-700 group-hover:text-white">
+            <Lock size={16} /> Change Password
+          </div>
+          <ChevronRight
+            size={16}
+            className="text-slate-400 opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all group-hover:text-white"
+          />
+        </button>
       </div>
 
       {isPwdOpen && (
@@ -319,6 +354,24 @@ function ProfileTab({ userDetail }) {
     </div>
   );
 }
+
+// ── compact pill stat (used inside ProfileTab) ────────────────────────────────
+const StatPill = ({ icon, count, label }) => (
+  <div className="flex flex-col items-center gap-2 p-4 bg-indigo-50/30 rounded-[2rem] border border-indigo-100/20">
+    <div className="p-2 bg-white rounded-xl border border-slate-100">
+      {icon}
+    </div>
+    <div className="text-center">
+      <div className="text-lg font-black text-slate-900 tracking-tighter">
+        {count}
+      </div>
+      <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
+        {label}
+      </div>
+    </div>
+  </div>
+);
+
 const StatCard = ({ icon, count, label }) => (
   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
     <div className="p-4 bg-slate-50 rounded-2xl">{icon}</div>

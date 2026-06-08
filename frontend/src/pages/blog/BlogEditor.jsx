@@ -92,9 +92,10 @@ const BlogEditor = () => {
   useEffect(() => {
     if (isEditMode && currentBlog && currentBlog._id === id) {
       if (currentBlog.coverImage) {
-        setPreview(
+        /* setPreview(
           `${import.meta.env.VITE_API_IMG_URL}/${currentBlog.coverImage}`,
-        );
+        ); */
+        setPreview(currentBlog.coverImage);
       }
     }
   }, [currentBlog?._id, id, isEditMode]);
@@ -483,11 +484,13 @@ const BlogEditor = () => {
                       <div className="relative w-full h-48 rounded-2xl overflow-hidden border border-primary/10 group">
                         <img
                           src={
-                            preview.startsWith("blob:") ||
+                            /*   preview.startsWith("blob:") ||
                             preview.startsWith("http") ||
                             preview.startsWith("data:")
                               ? preview
                               : `${import.meta.env.VITE_API_IMG_URL}/${preview}`
+                           */
+                            preview
                           }
                           alt="Cover"
                           className="w-full h-full object-cover"

@@ -132,8 +132,6 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
 
   if (!isOpen) return null;
 
-  const BASE_URL = import.meta.env.VITE_API_IMG_URL;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/20 backdrop-blur-md">
       <div className="card-auth max-w-2xl w-full h-[90vh] flex flex-col relative">
@@ -164,27 +162,22 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
                   src={
                     preview
                       ? preview
-                      : removeImage
-                        ? `${BASE_URL}/uploads/images/profilePics/blank.jpg`
-                        : currentData?.profilePic
-                          ? `${BASE_URL}/${currentData.profilePic}`
-                          : `${BASE_URL}/uploads/images/profilePics/blank.jpg`
+                      : currentData?.profilePic && !removeImage
+                        ? currentData.profilePic
+                        : import.meta.env.VITE_DEFAULT_AVATAR
                   }
                   alt="profile"
                   className="w-20 h-20 rounded-full object-cover border"
                 />
-                {(preview ||
-                  (currentData?.profilePic &&
-                    !currentData.profilePic.includes("blank.jpg"))) &&
-                  !removeImage && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
+                {(preview || currentData?.profilePic) && !removeImage && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
               <label className="btn-editorial cursor-pointer">
                 Upload

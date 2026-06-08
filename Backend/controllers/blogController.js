@@ -8,6 +8,7 @@ const aggregatePaginate = require("../utils/aggregate");
 const { generateUniqueSlug } = require("../utils/slugGeneration");
 const { fillMissingDates } = require("../utils/helperFunction");
 const sanitizeHtml = require("sanitize-html");
+const { DEFAULT_COVER } = require("../config/defaults");
 
 const safeParseJSON = (val, fallback = null) => {
   try {
@@ -119,7 +120,7 @@ exports.createBlog = async (req, res) => {
       if (Array.isArray(parsedImages)) {
         images = parsedImages.map((img, index) => ({
           url: img.url,
-          filename: img.filename,
+          publicId: img.publicId,
           size: img.size || 0,
           order: typeof img.order === "number" ? img.order : index,
         }));
@@ -130,10 +131,17 @@ exports.createBlog = async (req, res) => {
        COVER IMAGE
     ───────────────────────────────────── */
 
-    let coverImage = "uploads/blogs/covers/default-cover.png";
-
-    if (req.files?.coverImage?.[0]) {
+    //let coverImage = "uploads/blogs/covers/default-cover.png";
+    /*  if (req.files?.coverImage?.[0]) {
       coverImage = req.files.coverImage[0].path.replace(/\\/g, "/");
+      } */
+
+    let coverImage = DEFAULT_COVER;
+    let coverImagePublicId = null;
+
+    if (req.cloudinaryFiles?.coverImage?.[0]) {
+      coverImage = req.cloudinaryFiles.coverImage[0].secure_url;
+      coverImagePublicId = req.cloudinaryFiles.coverImage[0].public_id;
     }
 
     /* ─────────────────────────────────────
@@ -144,21 +152,14 @@ exports.createBlog = async (req, res) => {
       title,
       description,
       category,
-
       authorId: req.user._id,
-
       contentHtml: sanitizedHtml,
       contentJson,
-
       tags: typeof tags === "string" ? [tags] : Array.isArray(tags) ? tags : [],
-
       images,
       coverImage,
-
       status,
-
       scheduledFor: status === "scheduled" ? new Date(scheduledFor) : null,
-
       publishedAt: status === "published" ? new Date() : null,
     };
 
@@ -246,9 +247,9 @@ exports.updateBlog = async (req, res) => {
    COVER IMAGE
 ───────────────────────────────────── */
 
-    let coverImage = blog.coverImage; // ← default: keep existing
+    /*    let coverImage = blog.coverImage; 
 
-    if (req.files?.coverImage?.[0]) {
+     if (req.files?.coverImage?.[0]) {
       // new file uploaded — delete old, save new
       if (blog.coverImage && !blog.coverImage.includes("default-cover.png")) {
         const oldPath = path.resolve(blog.coverImage);
@@ -263,7 +264,34 @@ exports.updateBlog = async (req, res) => {
       }
       coverImage = null;
     }
-    // else: no file, no removal signal → coverImage stays as blog.coverImage
+ */
+    let coverImage = blog.coverImage;
+    let coverImagePublicId = blog.coverImagePublicId;
+
+    if (req.cloudinaryFiles?.coverImage?.[0]) {
+      // Delete old cover from Cloudinary
+      if (blog.coverImagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(blog.coverImagePublicId);
+        } catch (err) {
+          console.error("Failed to delete old cover from Cloudinary:", err);
+        }
+      }
+      coverImage = req.cloudinaryFiles.coverImage[0].secure_url;
+      coverImagePublicId = req.cloudinaryFiles.coverImage[0].public_id;
+    } else if (req.body.coverImage === "null" || req.body.coverImage === null) {
+      // User explicitly removed cover
+      if (blog.coverImagePublicId) {
+        try {
+          await cloudinary.uploader.destroy(blog.coverImagePublicId);
+        } catch (err) {
+          console.error("Failed to delete cover from Cloudinary:", err);
+        }
+      }
+      coverImage = DEFAULT_COVER;
+      coverImagePublicId = null;
+    }
+
     /* ─────────────────────────────────────
        STATUS LOGIC
     ───────────────────────────────────── */
@@ -304,6 +332,7 @@ exports.updateBlog = async (req, res) => {
         $set: {
           ...req.body,
           coverImage,
+          coverImagePublicId,
           slug,
           contentHtml,
           contentJson,
@@ -339,7 +368,7 @@ exports.updateBlog = async (req, res) => {
    INLINE IMAGE UPLOAD
 ───────────────────────────────────────────── */
 
-exports.uploadInlineImage = async (req, res) => {
+/* exports.uploadInlineImage = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
@@ -369,8 +398,35 @@ exports.uploadInlineImage = async (req, res) => {
       message: "Image upload failed",
     });
   }
-};
+}; */
 
+exports.uploadInlineImage = async (req, res) => {
+  try {
+    if (!req.cloudinaryFiles?.images?.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No image uploaded",
+      });
+    }
+
+    const images = req.cloudinaryFiles.image.map((file, index) => ({
+      url: file.secure_url,
+      publicId: file.public_id, // ← frontend should send this back in images[] on save
+      size: file.bytes,
+      order: index,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      images,
+    });
+  } catch (error) {
+    console.error("INLINE IMAGE ERROR:", error);
+    return res
+      .status(500)
+      .json({ success: false, data: false, message: "Image upload failed" });
+  }
+};
 exports.getAllBlogs = async (req, res) => {
   try {
     const { search, category, page, limit } = req.query;
@@ -633,7 +689,7 @@ exports.getBlogBySlug = async (req, res) => {
         .json({ success: false, message: "Blog not found" });
     }
 
-    // 🔥 FIXED: correct id usage + safe update
+    // acorrect id usage + safe update
     if (userId) {
       await Blog.updateOne(
         {

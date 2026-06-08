@@ -324,7 +324,7 @@ const AdminUserProfile = () => {
             <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-surface-highest bg-surface-low shrink-0">
               {user.profilePic ? (
                 <img
-                  src={`${imgUrl}/${user.profilePic}`}
+                  src={user.profilePic}
                   alt={user.username}
                   className="w-full h-full object-cover"
                 />
@@ -409,11 +409,7 @@ const AdminUserProfile = () => {
               label="Joined"
               value={fmtDate(user.createdAt)}
             />
-            <InfoRow
-              icon={Calendar}
-              label="Birthday"
-              value={fmtDate(user.dateOfBirth)}
-            />
+
             <InfoRow
               icon={Users}
               label="Followers"

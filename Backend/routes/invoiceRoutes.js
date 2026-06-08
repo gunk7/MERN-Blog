@@ -8,7 +8,7 @@ router.use(authMiddleware);
 
 router.post(
   "/upload-pdf",
-  uploadInvoicePdf,
+  ...uploadInvoicePdf,
   invoiceController.uploadInvoicePdf,
 );
 router.get("/my", invoiceController.getMyInvoices);
