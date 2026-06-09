@@ -102,7 +102,7 @@ exports.signup = async (req, res) => {
 
     // 5. Send OTP
     const mail = emailTemplates.verificationOTP(otp);
-    await mailSend(email, mail.subject, mail.html);
+    mailSend(email, mail.subject, mail.html);
 
     return res.status(201).json({
       success: true,
