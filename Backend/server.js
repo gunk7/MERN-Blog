@@ -16,7 +16,16 @@ const requestLogger = require("./middleware/requestLogger");
 connectDB();
 blogScheduler();
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:2807",
+    /https:\/\/wavelog-.*\.vercel\.app/,
+  ],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(
   "/api/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -34,10 +43,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api", allRoutes);
 
-/* app.get("/", (req, res) => {
+app.get("/", (req, res) => {
   return res.send("Welcome to the Blogging Platform API");
-}); */
-
+});
 /* app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); */

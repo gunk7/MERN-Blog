@@ -5,7 +5,7 @@ export const login = createAsyncThunk(
   "auth/login",
   async (values, { rejectWithValue }) => {
     try {
-      const res = await API.post("/auth/login", values);
+      const res = await API.post("/api/auth/login", values);
       const inputdata = res?.data?.data || {};
       return inputdata;
     } catch (err) {
@@ -26,7 +26,7 @@ export const refreshToken = createAsyncThunk(
         return rejectWithValue("No refresh token available");
       }
 
-      const res = await API.post("/auth/refresh", {
+      const res = await API.post("/api/auth/refresh", {
         refreshToken,
       });
 

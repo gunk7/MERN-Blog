@@ -6,7 +6,7 @@ export const fetchAllPlans = createAsyncThunk(
   "adminPlans/fetchAllPlans",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await API.get("/admin/plan");
+      const { data } = await API.get("/api/admin/plan");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -21,7 +21,7 @@ export const fetchPlanById = createAsyncThunk(
   "adminPlans/fetchPlanById",
   async (id, { rejectWithValue }) => {
     try {
-      const { data } = await API.get(`/admin/plan/${id}`);
+      const { data } = await API.get(`/api/admin/plan/${id}`);
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -36,7 +36,7 @@ export const fetchPlanStats = createAsyncThunk(
   "adminPlans/fetchPlanStats",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await API.get("/admin/plan/stats/plans");
+      const { data } = await API.get("/api/admin/plan/stats/plans");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -51,7 +51,7 @@ export const createPlan = createAsyncThunk(
   "adminPlans/createPlan",
   async (planData, { rejectWithValue }) => {
     try {
-      const { data } = await API.post("/admin/", planData);
+      const { data } = await API.post("/api/admin/", planData);
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -66,7 +66,7 @@ export const updatePlan = createAsyncThunk(
   "adminPlans/updatePlan",
   async ({ id, data: planData }, { rejectWithValue }) => {
     try {
-      const { data } = await API.patch(`/admin/${id}`, planData);
+      const { data } = await API.patch(`/api/admin/${id}`, planData);
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -81,7 +81,7 @@ export const deletePlan = createAsyncThunk(
   "adminPlans/deletePlan",
   async (id, { rejectWithValue }) => {
     try {
-      await API.delete(`/admin/${id}`);
+      await API.delete(`/api/admin/${id}`);
       return id;
     } catch (err) {
       return rejectWithValue(

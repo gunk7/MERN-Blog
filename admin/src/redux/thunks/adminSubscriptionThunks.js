@@ -8,7 +8,7 @@ export const fetchAllSubscriptions = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await API.get("/admin/subscription/all", {
+      const response = await API.get("/api/admin/subscription/all", {
         params: { page, limit, search, name, interval, status },
       });
       return response.data || [];
@@ -22,7 +22,7 @@ export const fetchSubscriptionStats = createAsyncThunk(
   "admin/fetchSubscriptionStats",
   async ({ search, name, interval, status }, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/subscription/stats", {
+      const response = await API.get("/api/admin/subscription/stats", {
         params: { search, name, interval, status },
       });
       return response.data || {};

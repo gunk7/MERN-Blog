@@ -11,7 +11,7 @@ export default function InvoiceList({}) {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const { data } = await API.get("/invoices/my");
+        const { data } = await API.get("/api/invoices/my");
         if (data.success) setInvoices(data.data);
         else setError(data.message);
       } catch (err) {
