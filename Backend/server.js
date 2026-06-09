@@ -20,6 +20,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:2807",
+    "https://wavelog-six.vercel.app",
     /https:\/\/wavelog-.*\.vercel\.app/,
   ],
   credentials: true,
