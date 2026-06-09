@@ -20,7 +20,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "http://localhost:2807",
-    "https://wavelog-d8rpn6upv-gunk7s-projects.vercel.app",
+    /https:\/\/wavelog-.*\.vercel\.app/,
   ],
   credentials: true,
 };
@@ -45,7 +45,7 @@ app.use("/api", allRoutes);
 
 app.get("/", (req, res) => {
   return res.send("Welcome to the Blogging Platform API");
-}); 
+});
 /* app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); */
