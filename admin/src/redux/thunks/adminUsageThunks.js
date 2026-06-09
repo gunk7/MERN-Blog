@@ -5,7 +5,7 @@ export const fetchAllUsage = createAsyncThunk(
   "admin/fetchAllUsage",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/usage/all", {
+      const response = await API.get("/api/admin/usage/all", {
         params: { month, page, limit },
       });
       return response.data || {};
@@ -19,7 +19,7 @@ export const fetchUserUsage = createAsyncThunk(
   "admin/fetchUserUsage",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/admin/usage/${userId}`, {
+      const response = await API.get(`/api/admin/usage/${userId}`, {
         params: { userId },
       });
       return response.data || {};

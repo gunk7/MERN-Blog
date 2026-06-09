@@ -5,7 +5,7 @@ export const fetchAllUsers = createAsyncThunk(
   "users/fetchAll",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/", { params });
+      const response = await API.get("/api/admin/", { params });
       const data = response.data || [];
       console.log(response);
       return data;
@@ -19,7 +19,7 @@ export const getAdminProfile = createAsyncThunk(
   "admin/getProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/me");
+      const response = await API.get("/api/admin/me");
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -31,7 +31,7 @@ export const updateProfileByAdmin = createAsyncThunk(
   "users/updateProfile",
   async ({ userId, userData }, { rejectWithValue }) => {
     try {
-      const response = await API.put(`/admin/${userId}`, userData);
+      const response = await API.put(`/api/admin/${userId}`, userData);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -43,7 +43,7 @@ export const deleteUser = createAsyncThunk(
   "users/delete",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await API.delete(`/admin/${userId}`);
+      const response = await API.delete(`/api/admin/${userId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -55,7 +55,7 @@ export const toggleUserStatus = createAsyncThunk(
   "users/toggleStatus",
   async ({ userId, active }, { rejectWithValue }) => {
     try {
-      const response = await API.patch(`/admin/${userId}`, {
+      const response = await API.patch(`/api/admin/${userId}`, {
         active,
       });
       return { userId, newStatus: !active };
@@ -69,7 +69,7 @@ export const fetchUserProfileAdmin = createAsyncThunk(
   "adminUsers/fetchProfile",
   async (username, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/admin/profile/${username}`);
+      const response = await API.get(`/api/admin/profile/${username}`);
       // Based on your controller, the data is in response.data.data
       return response.data.data;
     } catch (error) {
@@ -91,7 +91,7 @@ export const fetchAllBlogsAdmin = createAsyncThunk(
         cleanParams.deleted = true;
       }
 
-      const response = await API.get("/admin/blogs", { params: cleanParams });
+      const response = await API.get("/api/admin/blogs", { params: cleanParams });
       return response.data;
     } catch (error) {
       return rejectWithValue(error?.response?.data?.message || error.message);
@@ -105,7 +105,7 @@ export const fetchBlogByIdAdmin = createAsyncThunk(
   "adminBlogs/fetchById",
   async (blogId, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/admin/blogs/${blogId}`);
+      const response = await API.get(`/api/admin/blogs/${blogId}`);
       console.log(response);
       return response.data;
     } catch (error) {
@@ -120,7 +120,7 @@ export const updateBlogStatusAdmin = createAsyncThunk(
   "adminBlogs/updateStatus",
   async ({ blogId, status, adminNote, scheduledFor }, { rejectWithValue }) => {
     try {
-      const res = await API.patch(`/admin/blogs/${blogId}/status`, {
+      const res = await API.patch(`/api/admin/blogs/${blogId}/status`, {
         status,
         adminNote,
         ...(scheduledFor && { scheduledFor }),
@@ -138,8 +138,8 @@ export const deleteBlogAdmin = createAsyncThunk(
   "admin/deleteBlog",
   async ({ blogId, reason, hard }, { rejectWithValue }) => {
     try {
-      // Constructs URL: /admin/blogs/123?reason=Content+Policy&hard=false
-      const { data } = await API.delete(`/admin/blogs/${blogId}`, {
+      // Constructs URL: /api/admin/blogs/123?reason=Content+Policy&hard=false
+      const { data } = await API.delete(`/api/admin/blogs/${blogId}`, {
         params: { reason, hard },
       });
       return data;
@@ -154,7 +154,7 @@ export const fetchDashboardStats = createAsyncThunk(
   "adminStats/fetchOverview",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/stats");
+      const response = await API.get("/api/admin/stats");
       return response.data.data; // { users, blogs, topBlogs }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -167,7 +167,7 @@ export const fetchActivityChart = createAsyncThunk(
   "adminStats/fetchActivity",
   async (days = 30, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/stats/activity", {
+      const response = await API.get("/api/admin/stats/activity", {
         params: { days },
       });
       console.log(response);

@@ -288,7 +288,7 @@ export default function PlanSelection({ onContinue, userName = "" }) {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const { data } = await API.get("/plans/all");
+        const { data } = await API.get("/api/plans/all");
         console.log("PLans:", data);
         if (data.success) {
           setPlans(data.data);
@@ -314,7 +314,7 @@ export default function PlanSelection({ onContinue, userName = "" }) {
     try {
       if (selectedPlan.price === 0) {
         // Free plan
-        const { data } = await API.post("/subscription/free");
+        const { data } = await API.post("/api/subscription/free");
         if (data.success) {
           onContinue?.(selectedPlan);
         } else {
@@ -322,7 +322,7 @@ export default function PlanSelection({ onContinue, userName = "" }) {
         }
       } else {
         // Paid plan — redirect to Stripe checkout
-        const { data } = await API.post("/subscription/checkout", {
+        const { data } = await API.post("/api/subscription/checkout", {
           planId: selectedPlan._id,
         });
         if (data.success) {

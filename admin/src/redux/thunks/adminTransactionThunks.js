@@ -9,7 +9,7 @@ export const fetchAllTransactions = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response = await API.get("/admin/transactions/all", {
+      const response = await API.get("/api/admin/transactions/all", {
         params: {
           page,
           limit,
@@ -32,7 +32,7 @@ export const fetchTransactionStats = createAsyncThunk(
   "admin/fetchTransactionStats",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await API.get("/admin/transactions/stats");
+      const response = await API.get("/api/admin/transactions/stats");
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -45,7 +45,7 @@ export const fetchTransactionById = createAsyncThunk(
   "admin/fetchTransactionById",
   async ({ transactionId }, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/admin/transactions/${transactionId}`);
+      const response = await API.get(`/api/admin/transactions/${transactionId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);
@@ -58,7 +58,7 @@ export const fetchUserTransactions = createAsyncThunk(
   "admin/fetchUserTransactions",
   async ({ userId }, { rejectWithValue }) => {
     try {
-      const response = await API.get(`/admin/transactions/user/${userId}`);
+      const response = await API.get(`/api/admin/transactions/user/${userId}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);

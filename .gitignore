@@ -22,4 +22,3 @@ Backend/logs/
 *.log
 
 # Logger file
-Backend/logger.js
