@@ -16,7 +16,16 @@ const requestLogger = require("./middleware/requestLogger");
 connectDB();
 blogScheduler();
 
-app.use(cors());
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:2807",
+    "https://wavelog-d8rpn6upv-gunk7s-projects.vercel.app",
+  ],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(
   "/api/webhook/stripe",
   express.raw({ type: "application/json" }),
