@@ -226,60 +226,53 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Basic validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: "Invalid Credentials",
       });
     }
+
     const normalizedEmail = email.trim().toLowerCase();
-    // 2. Look for the user in the main collection
     const user = await User.findOne({ email: normalizedEmail });
 
-    // Scenario: User doesn't exist in main table
     if (!user) {
-      const isInVerifyTable = await UserVerify.findOne({
-        email: normalizedEmail,
-      });
-
+      const isInVerifyTable = await UserVerify.findOne({ email: normalizedEmail });
       if (isInVerifyTable) {
+        console.log("[Login 403] Unverified account:", normalizedEmail);
         return res.status(403).json({
           success: false,
-          message:
-            "Account not verified. Please check your email to complete signup.",
+          message: "Account not verified. Please check your email to complete signup.",
         });
       }
-
+      console.log("[Login 401] User not found:", normalizedEmail);
       return res.status(401).json({
         success: false,
         message: "Invalid Credentials",
       });
     }
-    //3/ Block Google accounts from local login
+
     if (!user.authProviders || !user.authProviders.includes("local")) {
+      console.log("[Login 401] Google account tried local login:", normalizedEmail);
       return res.status(401).json({
         success: false,
         data: false,
         message: "This account uses Google sign-in. Please login with Google.",
       });
     }
-    // 4. Scenario: User exists but is NOT verified
-    if (!user.isAccountVerified) {
-      const pendingVerification = await UserVerify.findOne({
-        email: normalizedEmail,
-      });
 
+    if (!user.isAccountVerified) {
+      const pendingVerification = await UserVerify.findOne({ email: normalizedEmail });
       if (pendingVerification) {
+        console.log("[Login 403] Not verified, pending exists:", normalizedEmail);
         return res.status(403).json({
           success: false,
           data: false,
-          message:
-            "Email not verified. Please verify your email before logging in.",
+          message: "Email not verified. Please verify your email before logging in.",
         });
       } else {
+        console.log("[Login 403] Not verified, resending OTP:", normalizedEmail);
         const newOtp = generateOTP(6);
-
         await UserVerify.create({
           email: normalizedEmail,
           username: user.username,
@@ -287,27 +280,24 @@ exports.login = async (req, res) => {
           otp: {
             code: newOtp,
             type: "email_verification",
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
             attempts: 0,
           },
         });
-
-        // Send Wavelog Editorial Template
         const mail = emailTemplates.verificationOTP(newOtp);
         mailSend(normalizedEmail, mail.subject, mail.html);
-
         return res.status(403).json({
           success: false,
           data: false,
-          message:
-            "Verification record expired. A new secure code has been sent to your email.",
+          message: "Verification record expired. A new secure code has been sent to your email.",
         });
       }
     }
 
-    // 4. Standard Password Match
     const isMatch = await user.comparePassword(password);
+    console.log("[Login] Password match:", isMatch, "for:", normalizedEmail);
     if (!isMatch) {
+      console.log("[Login 401] Password mismatch:", normalizedEmail);
       return res.status(401).json({
         success: false,
         data: false,
@@ -315,14 +305,12 @@ exports.login = async (req, res) => {
       });
     }
 
-    //5. Generate Tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
     const deviceInfo = req.headers["user-agent"] || "Unknown Device";
     const ipAddress = req.ip;
 
-    //Clear old tokens for this specific device/browser
     await User.findByIdAndUpdate(user._id, {
       $pull: { refreshTokens: { deviceInfo: deviceInfo } },
     });
@@ -333,7 +321,6 @@ exports.login = async (req, res) => {
       status: { $in: ["active", "cancelled"] },
     }).lean();
 
-    // 6. Success
     res.status(200).json({
       success: true,
       data: {
