@@ -7,6 +7,7 @@ const PORT = process.env.PORT;
 const cors = require("cors");
 const allRoutes = require("./routes/routes");
 const { blogScheduler } = require("./services/cronService");
+const { tokenResetScheduler } = require("./services/tokenResetScheduler");
 const session = require("express-session");
 const passport = require("./config/passport");
 
@@ -15,6 +16,7 @@ const requestLogger = require("./middleware/requestLogger");
 
 connectDB();
 blogScheduler();
+tokenResetScheduler();
 
 const corsOptions = {
   origin: [

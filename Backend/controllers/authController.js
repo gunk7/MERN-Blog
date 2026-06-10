@@ -77,28 +77,34 @@ exports.signup = async (req, res) => {
 
     // 4. Upsert pending verification (instead of blocking)
     const otp = generateOTP(6);
-
-    // hash both manually since findOneAndUpdate bypasses pre-save hooks
     const salt = await bcrypt.genSalt(10);
-    const hashedOtp = await bcrypt.hash(otp, 9);
+
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await UserVerify.findOneAndUpdate(
-      { email },
-      {
+    let verifyDoc = await UserVerify.findOne({ email });
+    if (verifyDoc) {
+      verifyDoc.username = username;
+      verifyDoc.password = hashedPassword;
+      verifyDoc.otp = {
+        code: otp, // ← plain, hook will hash it
+        type: "email_verification",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        attempts: 0,
+      };
+    } else {
+      verifyDoc = new UserVerify({
         username,
         email,
-        password: hashedPassword, // ← hashed
-        authProviders: ["local"],
+        password: hashedPassword,
         otp: {
-          code: hashedOtp, // ← hashed
+          code: otp, // ← plain, hook will hash it
           type: "email_verification",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
           attempts: 0,
         },
-      },
-      { upsert: true, new: true },
-    );
+      });
+    }
+    await verifyDoc.save();
 
     // 5. Send OTP
     const mail = emailTemplates.verificationOTP(otp);
@@ -378,19 +384,27 @@ exports.resendOtp = async (req, res) => {
     }
 
     const newOtp = generateOTP(6);
-    const pendingUser = await UserVerify.findOneAndUpdate(
-      { email: normalizedEmail },
-      {
+
+    let pendingUser = await UserVerify.findOne({ email: normalizedEmail });
+    if (pendingUser) {
+      pendingUser.otp = {
+        code: newOtp,
+        type: "email_verification",
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        attempts: 0,
+      };
+      await pendingUser.save();
+    } else {
+      await UserVerify.create({
+        email: normalizedEmail,
         otp: {
           code: newOtp,
           type: "email_verification",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
           attempts: 0,
         },
-      },
-      { upsert: true, new: true },
-    );
-
+      });
+    }
     // Send the Editorial Template
     const mail = emailTemplates.verificationOTP(newOtp);
     mailSend(normalizedEmail, mail.subject, mail.html);
@@ -433,6 +447,7 @@ exports.forgotPassword = async (req, res) => {
       reqUser.otp.code = forgotOtp;
       reqUser.otp.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       reqUser.otp.attempts = 0;
+      reqUser.markModified("otp"); // ← add this
     } else {
       reqUser = new UserVerify({
         username: user.username,

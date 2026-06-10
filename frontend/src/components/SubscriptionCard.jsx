@@ -887,7 +887,7 @@ export default function SubscriptionCard({ onGoToPlans }) {
               {/* Refund section */}
               {!isFree && (
                 <>
-                 {/*  */}
+                  {/*  */}
                   {/* Button always shows until dialog is opened */}
                   {!showRefundDialog && (
                     <button
@@ -1175,6 +1175,38 @@ export default function SubscriptionCard({ onGoToPlans }) {
                   onOpen={() => dispatch(fetchAddonPlans())}
                 />
               )}
+            {/* Upgrade — show for ALL active plans (free or paid) */}
+            {isActive && (
+              <div className="space-y-3 pt-2 border-t border-indigo-100/40">
+                <button
+                  onClick={handleToggleUpgrade}
+                  className="w-full flex items-center justify-between p-5 bg-fuchsia-700 hover:bg-fuchsia-900 text-white rounded-2xl transition-all group"
+                >
+                  <div className="flex items-center gap-3 font-bold text-sm">
+                    <ArrowUpRight size={16} /> Upgrade Plan
+                  </div>
+                  <ChevronRight
+                    size={16}
+                    className={`opacity-70 transition-all duration-300 ${showUpgrade ? "rotate-90" : "group-hover:translate-x-1"}`}
+                  />
+                </button>
+                {showUpgrade &&
+                  (upgradePlans.length === 0 ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-slate-400"
+                      />
+                    </div>
+                  ) : (
+                    <UpgradePlans
+                      plans={upgradePlans}
+                      upgrading={upgrading}
+                      onSelect={handleUpgrade}
+                    />
+                  ))}
+              </div>
+            )}
 
             {isActive && !isFree && (
               <>
