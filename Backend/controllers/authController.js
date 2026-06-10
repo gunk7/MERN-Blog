@@ -77,9 +77,6 @@ exports.signup = async (req, res) => {
 
     // 4. Upsert pending verification (instead of blocking)
     const otp = generateOTP(6);
-    const salt = await bcrypt.genSalt(10);
-
-    const hashedPassword = await bcrypt.hash(password, salt);
 
     let verifyDoc = await UserVerify.findOne({ email });
     if (verifyDoc) {
@@ -95,7 +92,7 @@ exports.signup = async (req, res) => {
       verifyDoc = new UserVerify({
         username,
         email,
-        password: hashedPassword,
+        password,
         otp: {
           code: otp, // ← plain, hook will hash it
           type: "email_verification",
