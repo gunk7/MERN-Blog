@@ -5,7 +5,6 @@ import { getProfile } from "../redux/thunks/userThunks";
 import API from "../services/axios";
 import generateInvoicePdf from "../services/generateInvoicePdf";
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function PaymentStatus() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -16,32 +15,24 @@ export default function PaymentStatus() {
   const [invoiceId, setInvoiceId] = useState(null);
   const [pdfError, setPdfError] = useState(false);
   const [retryTrigger, setRetryTrigger] = useState(0);
-  const [pdfUrl, setPdfUrl] = useState(null); // add alongside other state
-  const generatedRef = useRef(false); // prevent double generation in StrictMode
+  const generatedRef = useRef(false);
 
   const isSuccess = searchParams.has("session_id");
   const sessionId = searchParams.get("session_id");
   const user = useSelector((s) => s.user?.profile?.userDetail);
 
-  // ── Fetch invoice + generate PDF once user is loaded ────────────────────────
   useEffect(() => {
     if (!isSuccess || !sessionId || !user || generatedRef.current) return;
-
     const run = async () => {
       try {
-        // 1. Fetch invoice from backend
         const { data } = await API.get(`/invoices/session/${sessionId}`);
         if (!data.success) throw new Error(data.message);
         const invoice = data.data;
         setInvoiceId(invoice.invoiceId);
-
-        // 2. Generate PDF in browser
         const doc = await generateInvoicePdf({ invoice, user });
         setPdfDoc(doc);
         setPdfReady(true);
-        generatedRef.current = true; // lock ONLY after success so retries work
-
-        // 3. Upload PDF blob to backend silently
+        generatedRef.current = true;
         const pdfBlob = doc.output("blob");
         const formData = new FormData();
         formData.append("invoice", pdfBlob, `${invoice.invoiceId}.pdf`);
@@ -51,15 +42,13 @@ export default function PaymentStatus() {
         });
       } catch (err) {
         console.error("Invoice generation failed:", err.message);
-        generatedRef.current = false; // allow retry on failure
+        generatedRef.current = false;
         setPdfError(true);
       }
     };
-
     run();
-  }, [isSuccess, sessionId, user, retryTrigger]); // retryTrigger re-runs the effect
+  }, [isSuccess, sessionId, user, retryTrigger]);
 
-  // ── Retry handler ────────────────────────────────────────────────────────────
   const handleRetry = () => {
     generatedRef.current = false;
     setPdfError(false);
@@ -68,22 +57,25 @@ export default function PaymentStatus() {
     setRetryTrigger((n) => n + 1);
   };
 
-  // ── Auto-redirect countdown ──────────────────────────────────────────────────
   useEffect(() => {
-    if (isSuccess) {
-      dispatch(getProfile());
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            navigate("/profile");
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
-    }
+    if (!isSuccess) return;
+    dispatch(getProfile());
   }, [isSuccess]);
+
+  useEffect(() => {
+    if (!isSuccess) return;
+    if (!pdfReady && !pdfError) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          navigate("/profile");
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isSuccess, pdfReady, pdfError]);
 
   const handleDownload = () => {
     if (!pdfDoc || !invoiceId) return;
@@ -91,49 +83,18 @@ export default function PaymentStatus() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden"
-      style={{ background: "#faf9ff" }}
-    >
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-surface">
       {/* Background blobs */}
+      <div className="fixed -z-10 rounded-full opacity-25 blur-[120px] w-120 h-120 bg-linear-to-br from-primary-fixed-dim to-primary -top-24 -right-24 animate-float" />
       <div
-        className="fixed -z-10 rounded-full opacity-25 blur-[120px]"
-        style={{
-          width: "480px",
-          height: "480px",
-          background: "radial-gradient(circle, #d8bafa, #6a5188)",
-          top: "-100px",
-          right: "-100px",
-          animation: "float 15s ease-in-out infinite",
-        }}
-      />
-      <div
-        className="fixed -z-10 rounded-full opacity-15 blur-[100px]"
-        style={{
-          width: "320px",
-          height: "320px",
-          background: "radial-gradient(circle, #d8bafa, #8e74ae)",
-          bottom: "-80px",
-          left: "-80px",
-          animation: "float 18s ease-in-out infinite reverse",
-        }}
+        className="fixed -z-10 rounded-full opacity-15 blur-[100px] w-80 h-80 bg-linear-to-br from-primary-fixed-dim to-primary-container -bottom-20 -left-20"
+        style={{ animation: "float 18s ease-in-out infinite reverse" }}
       />
 
-      <div
-        className="flex flex-col items-center text-center"
-        style={{
-          animation: "reveal 0.7s cubic-bezier(0.23,1,0.32,1) forwards",
-        }}
-      >
+      <div className="flex flex-col items-center text-center text-reveal">
         {/* Icon */}
         <div
-          className="mb-8 flex items-center justify-center rounded-full"
-          style={{
-            width: "88px",
-            height: "88px",
-            background: isSuccess ? "#f3ebff" : "#f6f2ff",
-            border: `2px solid rgba(106,81,136,${isSuccess ? "0.15" : "0.1"})`,
-          }}
+          className={`mb-8 flex items-center justify-center rounded-full w-22 h-22 border-2 ${isSuccess ? "bg-primary-fixed border-primary/15" : "bg-surface-low border-primary/10"}`}
         >
           {isSuccess ? (
             <svg
@@ -141,9 +102,8 @@ export default function PaymentStatus() {
               height="40"
               viewBox="0 0 40 40"
               fill="none"
-              style={{
-                animation: "reveal 0.5s 0.3s cubic-bezier(0.23,1,0.32,1) both",
-              }}
+              className="text-reveal"
+              style={{ animationDelay: "0.3s" }}
             >
               <path
                 d="M8 20L16 28L32 12"
@@ -167,71 +127,40 @@ export default function PaymentStatus() {
 
         {/* Badge */}
         <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
-          style={{
-            background: isSuccess ? "#f3ebff" : "#f6f2ff",
-            color: isSuccess ? "#6a5188" : "#8e74ae",
-          }}
+          className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5 ${isSuccess ? "bg-primary-fixed text-primary" : "bg-surface-low text-primary-container"}`}
         >
           <span
-            className="w-1.5 h-1.5 rounded-full inline-block"
-            style={{ background: isSuccess ? "#6a5188" : "#8e74ae" }}
+            className={`w-1.5 h-1.5 rounded-full inline-block ${isSuccess ? "bg-primary" : "bg-primary-container"}`}
           />
           {isSuccess ? "Payment confirmed" : "Payment cancelled"}
         </div>
 
         {/* Heading */}
-        <h1
-          className="text-4xl sm:text-5xl font-bold mb-4"
-          style={{
-            color: "#261e35",
-            fontFamily: "'Times New Roman', serif",
-            lineHeight: 1.15,
-          }}
-        >
+        <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-on-surface font-display leading-tight">
           {isSuccess ? "You're all set." : "No worries."}
         </h1>
 
-        <p
-          className="text-base mb-10 max-w-sm leading-relaxed"
-          style={{ color: "#6b637a" }}
-        >
+        <p className="text-base mb-10 max-w-sm leading-relaxed text-on-surface-variant">
           {isSuccess
             ? "Your Pro plan is now active. Enjoy full access to all features."
             : "Your payment was cancelled and you haven't been charged. You can upgrade anytime from your settings."}
         </p>
 
         {/* Card */}
-        <div
-          className="w-full max-w-sm rounded-4xl p-6 mb-8"
-          style={{
-            background: "#ffffff",
-            border: "1px solid rgba(106,81,136,0.1)",
-            boxShadow: "0 4px 24px rgba(106,81,136,0.06)",
-          }}
-        >
+        <div className="w-full max-w-sm rounded-4xl p-6 mb-8 bg-surface-lowest border border-primary/10 shadow-lavender">
           {isSuccess ? (
             <>
               <div className="flex items-center justify-between mb-4">
-                <span
-                  className="text-sm font-bold"
-                  style={{ color: "#261e35" }}
-                >
+                <span className="text-sm font-bold text-on-surface">
                   Plan activated
                 </span>
-                <span
-                  className="text-xs font-bold px-3 py-1 rounded-full"
-                  style={{ background: "#e8f5e9", color: "#2e7d32" }}
-                >
+                <span className="text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">
                   Active
                 </span>
               </div>
 
               {/* Feature list */}
-              <div
-                className="flex flex-col gap-2 pt-4"
-                style={{ borderTop: "1px solid rgba(106,81,136,0.08)" }}
-              >
+              <div className="flex flex-col gap-2 pt-4 border-t border-primary/8">
                 {[
                   "AI Chat & Summaries",
                   "Writing Assistant",
@@ -239,10 +168,7 @@ export default function PaymentStatus() {
                   "Analytics Access",
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-2">
-                    <span
-                      className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
-                      style={{ background: "#f3ebff" }}
-                    >
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0 bg-primary-fixed">
                       <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
                         <path
                           d="M1.5 4.5L3.5 6.5L7.5 2.5"
@@ -253,63 +179,41 @@ export default function PaymentStatus() {
                         />
                       </svg>
                     </span>
-                    <span className="text-sm" style={{ color: "#261e35" }}>
-                      {f}
-                    </span>
+                    <span className="text-sm text-on-surface">{f}</span>
                   </div>
                 ))}
               </div>
 
-              {/* ── Upgrade nudge ── */}
-              <div
-                className="mt-4 flex items-center justify-between px-4 py-3 rounded-2xl"
-                style={{
-                  background: "#f3ebff",
-                  border: "1px solid rgba(106,81,136,0.12)",
-                }}
-              >
+              {/* Upgrade nudge */}
+              <div className="mt-4 flex items-center justify-between px-4 py-3 rounded-2xl bg-primary-fixed border border-primary/12">
                 <div className="flex flex-col items-start">
-                  <span
-                    className="text-xs font-bold"
-                    style={{ color: "#6a5188" }}
-                  >
+                  <span className="text-xs font-bold text-primary">
                     Save 20% with annual billing
                   </span>
-                  <span className="text-xs mt-0.5" style={{ color: "#8e74ae" }}>
+                  <span className="text-xs mt-0.5 text-primary-container">
                     Switch to yearly anytime
                   </span>
                 </div>
                 <button
                   onClick={() => navigate("/onboarding/plan")}
-                  className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:opacity-80 shrink-0 ml-3"
-                  style={{ background: "#6a5188", color: "#fff" }}
+                  className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all hover:opacity-80 shrink-0 ml-3 bg-primary text-white"
                 >
                   Upgrade →
                 </button>
               </div>
 
-              {/* ── Invoice download strip ── */}
-              <div
-                className="mt-5 pt-4"
-                style={{ borderTop: "1px solid rgba(106,81,136,0.08)" }}
-              >
+              {/* Invoice strip */}
+              <div className="mt-5 pt-4 border-t border-primary/8">
                 {pdfReady ? (
                   <button
                     onClick={handleDownload}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all hover:opacity-80"
-                    style={{
-                      background: "#f3ebff",
-                      border: "1px solid rgba(106,81,136,0.15)",
-                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all hover:opacity-80 bg-primary-fixed border border-primary/15"
                   >
                     <div className="flex flex-col items-start">
-                      <span
-                        className="text-xs font-bold"
-                        style={{ color: "#6a5188" }}
-                      >
+                      <span className="text-xs font-bold text-primary">
                         {invoiceId}
                       </span>
-                      <span className="text-xs" style={{ color: "#8e74ae" }}>
+                      <span className="text-xs text-primary-container">
                         Download invoice PDF
                       </span>
                     </div>
@@ -324,24 +228,14 @@ export default function PaymentStatus() {
                     </svg>
                   </button>
                 ) : pdfError ? (
-                  // ── Retry state ──
                   <div className="flex flex-col items-center gap-2 py-1">
-                    <p
-                      className="text-xs text-center"
-                      style={{ color: "#8e74ae" }}
-                    >
+                    <p className="text-xs text-center text-primary-container">
                       Invoice generation failed.
                     </p>
                     <button
                       onClick={handleRetry}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80"
-                      style={{
-                        background: "#f3ebff",
-                        color: "#6a5188",
-                        border: "1px solid rgba(106,81,136,0.2)",
-                      }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:opacity-80 bg-primary-fixed text-primary border border-primary/20"
                     >
-                      {/* Retry icon */}
                       <svg
                         width="12"
                         height="12"
@@ -360,16 +254,9 @@ export default function PaymentStatus() {
                     </button>
                   </div>
                 ) : (
-                  // ── Loading state ──
                   <div className="flex items-center justify-center gap-2 py-2">
-                    <span
-                      className="w-3 h-3 rounded-full border-2 animate-spin"
-                      style={{
-                        borderColor: "#d8bafa",
-                        borderTopColor: "#6a5188",
-                      }}
-                    />
-                    <span className="text-xs" style={{ color: "#8e74ae" }}>
+                    <span className="w-3 h-3 rounded-full border-2 animate-spin border-primary-fixed-dim border-t-primary" />
+                    <span className="text-xs text-primary-container">
                       Generating invoice…
                     </span>
                   </div>
@@ -378,16 +265,10 @@ export default function PaymentStatus() {
             </>
           ) : (
             <>
-              <p
-                className="text-sm font-bold mb-3"
-                style={{ color: "#261e35" }}
-              >
+              <p className="text-sm font-bold mb-3 text-on-surface">
                 Still on Free plan
               </p>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "#6b637a" }}
-              >
+              <p className="text-sm leading-relaxed text-on-surface-variant">
                 You still have access to AI Chat and AI Summaries with free tier
                 limits. Upgrade whenever you're ready.
               </p>
@@ -396,14 +277,10 @@ export default function PaymentStatus() {
         </div>
 
         {/* CTAs */}
-        <div
-          className="flex flex-col gap-3 w-full"
-          style={{ maxWidth: "320px" }}
-        >
+        <div className="flex flex-col gap-3 w-full max-w-xs">
           <button
             onClick={() => navigate("/profile")}
-            className="btn-editorial"
-            style={{ fontFamily: "'Times New Roman', serif" }}
+            className="btn-editorial font-display"
           >
             {isSuccess ? "Go to dashboard →" : "Continue with Free →"}
           </button>
@@ -411,12 +288,7 @@ export default function PaymentStatus() {
           {!isSuccess && (
             <button
               onClick={() => navigate("/onboarding/plan")}
-              className="w-full py-3 px-6 rounded-full font-bold text-base transition-all"
-              style={{
-                color: "#6a5188",
-                background: "transparent",
-                border: "1.5px solid rgba(106,81,136,0.2)",
-              }}
+              className="w-full py-3 px-6 rounded-full font-bold text-base transition-all text-primary bg-transparent border border-primary/20"
             >
               Try again
             </button>
@@ -424,8 +296,10 @@ export default function PaymentStatus() {
         </div>
 
         {isSuccess && (
-          <p className="text-xs mt-4" style={{ color: "#6b637a" }}>
-            Redirecting automatically in {countdown}s
+          <p className="text-xs mt-4 text-on-surface-variant">
+            {!pdfReady && !pdfError
+              ? "Please wait while your invoice is being prepared…"
+              : `Redirecting automatically in ${countdown}s`}
           </p>
         )}
       </div>

@@ -233,7 +233,16 @@ exports.refundRequest = async (req, res) => {
         message: "No cancelled subscription found eligible for refund.",
       });
     }
-
+    const refundDeadline = new Date(
+      subscription.cancelledAt.getTime() + 24 * 60 * 60 * 1000,
+    );
+    if (new Date() > refundDeadline) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Refund requests must be submitted within 24 hours of cancellation.",
+      });
+    }
     const transaction = await Transaction.findOne({
       userId,
       status: "paid",

@@ -714,6 +714,12 @@ export default function SubscriptionCard({ onGoToPlans }) {
         year: "numeric",
       })
     : "—";
+  const refundDeadline = sub?.cancelledAt
+    ? new Date(new Date(sub.cancelledAt).getTime() + 24 * 60 * 60 * 1000)
+    : null;
+  const isRefundEligible = refundDeadline ? new Date() < refundDeadline : false;
+  const isRefundResolved =
+    refundData?.status === "approved" || refundData?.status === "rejected";
 
   const activeFeatures = sub?.planSnapshot?.features
     ? Object.entries(sub.planSnapshot.features).filter(([, v]) => v)
@@ -885,11 +891,9 @@ export default function SubscriptionCard({ onGoToPlans }) {
               </button>
 
               {/* Refund section */}
-              {!isFree && (
+              {!isFree && !isRefundResolved && (
                 <>
-                  {/*  */}
-                  {/* Button always shows until dialog is opened */}
-                  {!showRefundDialog && (
+                  {!showRefundDialog && isRefundEligible && (
                     <button
                       onClick={async () => {
                         await dispatch(fetchRefundStatus());
@@ -907,14 +911,15 @@ export default function SubscriptionCard({ onGoToPlans }) {
                     </button>
                   )}
 
-                  {/* Dialog: show status if exists, form if not */}
+                  {!showRefundDialog && refundData?.status === "pending" && (
+                    <RefundStatusBanner refundData={refundData} />
+                  )}
+
                   {showRefundDialog && (
                     <>
                       {refundData ? (
-                        // Already has a request for this sub — show it
                         <RefundStatusBanner refundData={refundData} />
                       ) : (
-                        // No request yet — show form
                         <div className="p-5 bg-orange-50 rounded-2xl border border-orange-100 space-y-4">
                           <div className="flex items-start gap-2">
                             <AlertTriangle
