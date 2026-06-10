@@ -81,9 +81,8 @@ UserSchema.pre("save", async function () {
       this.email = this.email.trim().toLowerCase();
     }
     if (!this.password || !this.isModified("password")) return;
-
-    const isAlreadyHashed = /^\$2[ayb]\$.{56}$/.test(this.password);
-
+    
+    const isAlreadyHashed = /^\$2[ayb]\$\d{2}\$.{53}$/.test(this.password);
     if (isAlreadyHashed) return;
 
     const salt = await bcrypt.genSalt(10);
