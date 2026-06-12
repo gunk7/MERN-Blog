@@ -288,3 +288,8 @@ body {
          px-1.5 py-0.5 rounded-md
          font-mono text-[0.82em];
 }
+/* btn-editorial override — allow auto width on home page */
+@utility btn-home {
+  @apply btn-editorial;
+  width: auto !important;
+}
