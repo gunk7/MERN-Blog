@@ -256,7 +256,7 @@ function ProfileTab({ userDetail }) {
               <DetailRow label="Email" value={userDetail?.email} />
               <DetailRow label="Country" value={userDetail?.country} />
               <DetailRow label="Gender" value={userDetail?.gender} />
-              <DetailRow
+              {/* <DetailRow
                 label="Date of Birth"
                 value={
                   userDetail?.dob
@@ -267,7 +267,7 @@ function ProfileTab({ userDetail }) {
                       })
                     : "Hidden"
                 }
-              />
+              /> */}
             </div>
           </div>
 

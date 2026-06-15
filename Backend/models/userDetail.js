@@ -4,7 +4,7 @@ const UserDetailsSchema = new mongoose.Schema(
   {
     profilePic: {
       type: String,
-      default: "uploads/images/profilePics/blank.jpg",
+      default: null,
     },
     profilePicPublicId: {
       type: String,
