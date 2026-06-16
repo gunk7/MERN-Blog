@@ -402,7 +402,9 @@ exports.updateBlog = async (req, res) => {
 
 exports.uploadInlineImage = async (req, res) => {
   try {
-    if (!req.cloudinaryFiles?.images?.length) {
+    console.log("req.files:", req.files);
+  console.log("req.cloudinaryFiles:", req.cloudinaryFiles);
+    if (!req.cloudinaryFiles?.image?.length) {
       return res.status(400).json({
         success: false,
         message: "No image uploaded",
@@ -427,6 +429,7 @@ exports.uploadInlineImage = async (req, res) => {
       .json({ success: false, data: false, message: "Image upload failed" });
   }
 };
+
 exports.getAllBlogs = async (req, res) => {
   try {
     const { search, category, page, limit } = req.query;

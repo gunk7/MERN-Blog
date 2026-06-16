@@ -17,7 +17,7 @@ import {
   Users,
   ShieldCheck,
   UserX,
-a} from "lucide-react";
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { toggleUserStatus } from "../../redux/thunks/adminThunks";
 

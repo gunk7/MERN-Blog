@@ -50,7 +50,7 @@ import Highlight from "@tiptap/extension-highlight";
 async function uploadImageToServer(file) {
   const formData = new FormData();
   formData.append("image", file);
-  const { data } = await API.post("/blogs/upload/inline", formData, {
+  const { data } = await API.post("/api/blogs/upload/inline", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   const img = data.images?.[0];
@@ -335,7 +335,8 @@ const FriendlyMarkdownEditor = ({
           editor.isEmpty ? "" : editor.getHTML(),
           editor.isEmpty ? {} : editor.getJSON(),
         );
-      } catch {
+      } catch (error) {
+        console.log(error);
         toast.error("Image upload failed");
       } finally {
         setUploading(false);
