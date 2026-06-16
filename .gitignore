@@ -7,8 +7,6 @@ node_modules/
 # OS files
 .DS_Store
 
-# Lock files (only if you REALLY want to ignore them)
-package-lock.json
 
 # Uploads (important)
 Backend/uploads/
