@@ -27,12 +27,13 @@ export default function AuthCallback() {
 
     dispatch(getProfile(accessToken))
       .unwrap()
-      .then((res) => {
+      .then(() => {
         navigate("/profile");
       })
       .catch((err) => {
         console.log("profile error:", err);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

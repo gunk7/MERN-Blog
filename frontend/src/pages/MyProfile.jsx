@@ -14,7 +14,6 @@ import {
   User,
   CreditCard,
   FileText,
-  Zap,
 } from "lucide-react";
 import { getProfile } from "../redux/thunks/userThunks";
 import Edit from "../modals/Edit";
@@ -94,7 +93,7 @@ const MyProfile = () => {
                 {userDetail?.firstName} {userDetail?.lastName}
               </h1>
               <p className="text-slate-400 font-medium text-lg mt-1">
-                @{userDetail?.username || user?.username}
+                @{user?.username}
               </p>
             </div>
           </div>
@@ -114,41 +113,47 @@ const MyProfile = () => {
           <aside className="w-full lg:w-64 shrink-0">
             {/* Mobile: horizontal scrollable pills */}
             <div className="flex lg:hidden gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm whitespace-nowrap transition-all shrink-0 ${
-                    activeTab === id
-                      ? "bg-fuchsia-700 text-white shadow-sm"
-                      : "bg-white text-slate-500 border border-slate-100 hover:border-indigo-200 hover:text-slate-800"
-                  }`}
-                >
-                  <Icon size={15} />
-                  {label}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon }) => {
+                const TabIcon = icon;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm whitespace-nowrap transition-all shrink-0 ${
+                      activeTab === id
+                        ? "bg-fuchsia-700 text-white shadow-sm"
+                        : "bg-white text-slate-500 border border-slate-100 hover:border-indigo-200 hover:text-slate-800"
+                    }`}
+                  >
+                    <TabIcon size={15} />
+                    {label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Desktop: vertical card */}
             <div className="hidden lg:flex flex-col bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-3 gap-1 sticky top-32">
-              {TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-sm transition-all text-left ${
-                    activeTab === id
-                      ? "bg-fuchsia-700 text-white shadow-sm"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                  }`}
-                >
-                  <Icon size={16} />
-                  {label}
-                  {activeTab === id && (
-                    <ChevronRight size={14} className="ml-auto opacity-70" />
-                  )}
-                </button>
-              ))}
+              {TABS.map(({ id, label, icon }) => {
+                const TabIcon = icon;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`flex items-center gap-3 px-5 py-4 rounded-2xl font-bold text-sm transition-all text-left ${
+                      activeTab === id
+                        ? "bg-fuchsia-700 text-white shadow-sm"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <TabIcon size={16} />
+                    {label}
+                    {activeTab === id && (
+                      <ChevronRight size={14} className="ml-auto opacity-70" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </aside>
           {/* ── Tab content ─────────────────────────────────────────────── */}
@@ -177,7 +182,7 @@ const MyProfile = () => {
   );
 };
 // ── animated tab content ──────────────────────────────────────────────────────
-function TabContent({ activeTab, userDetail, navigate, authUser }) {
+function TabContent({ activeTab, userDetail, navigate }) {
   const [displayTab, setDisplayTab] = useState(activeTab);
   const [animState, setAnimState] = useState("in"); // "in" | "out"
   const prevTab = useRef(activeTab);
@@ -201,7 +206,7 @@ function TabContent({ activeTab, userDetail, navigate, authUser }) {
 
   return (
     <div
-      className="flex-1 min-w-0 transition-all duration-[180ms] ease-in-out"
+      className="flex-1 min-w-0 transition-all duration-180 ease-in-out"
       style={{
         opacity: animState === "out" ? 0 : 1,
         transform: animState === "out" ? "translateY(10px)" : "translateY(0px)",
@@ -357,7 +362,7 @@ function ProfileTab({ userDetail }) {
 
 // ── compact pill stat (used inside ProfileTab) ────────────────────────────────
 const StatPill = ({ icon, count, label }) => (
-  <div className="flex flex-col items-center gap-2 p-4 bg-indigo-50/30 rounded-[2rem] border border-indigo-100/20">
+  <div className="flex flex-col items-center gap-2 p-4 bg-indigo-50/30 rounded-4xl border border-indigo-100/20">
     <div className="p-2 bg-white rounded-xl border border-slate-100">
       {icon}
     </div>
@@ -366,18 +371,6 @@ const StatPill = ({ icon, count, label }) => (
         {count}
       </div>
       <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">
-        {label}
-      </div>
-    </div>
-  </div>
-);
-
-const StatCard = ({ icon, count, label }) => (
-  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6">
-    <div className="p-4 bg-slate-50 rounded-2xl">{icon}</div>
-    <div>
-      <div className="text-3xl font-black text-slate-900">{count || 0}</div>
-      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
         {label}
       </div>
     </div>

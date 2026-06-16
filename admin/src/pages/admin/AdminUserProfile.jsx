@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { createAsyncThunk } from "@reduxjs/toolkit";
+import { useDispatch, } from "react-redux";
 import API from "../../services/axios";
 import {
   ArrowLeft,
@@ -11,18 +10,14 @@ import {
   Eye,
   Heart,
   BookOpen,
-  FileText,
   Clock,
   TrendingUp,
   CheckCircle,
   XCircle,
   Users,
-  Globe,
   ShieldCheck,
   UserX,
-  ToggleLeft,
-  ToggleRight,
-} from "lucide-react";
+a} from "lucide-react";
 import { toast } from "react-toastify";
 import { toggleUserStatus } from "../../redux/thunks/adminThunks";
 
@@ -176,7 +171,7 @@ const InfoRow = ({ icon: Icon, label, value }) => {
 
 // ─── Blog row ────────────────────────────────────────────────────────────────
 const BlogRow = ({ blog, rank }) => {
-  const imgUrl = import.meta.env.VITE_API_IMG_URL;
+ // const imgUrl = import.meta.env.VITE_API_IMG_URL;
   return (
     <div
       className="bg-white border border-black/5 rounded-3xl p-4 shadow-lavender

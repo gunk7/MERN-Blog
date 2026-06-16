@@ -121,7 +121,6 @@ const Sep = () => <div className="w-px h-5 bg-primary/10 mx-0.5 shrink-0" />;
 // ── Main component ───────────────────────────────────────────────────────────
 const FriendlyMarkdownEditor = ({
   value,
-  title,
   images,
   onChange,
   onImagesChange,

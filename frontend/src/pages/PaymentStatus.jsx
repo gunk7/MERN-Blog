@@ -60,6 +60,7 @@ export default function PaymentStatus() {
   useEffect(() => {
     if (!isSuccess) return;
     dispatch(getProfile());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess]);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function PaymentStatus() {
       });
     }, 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, pdfReady, pdfError]);
 
   const handleDownload = () => {

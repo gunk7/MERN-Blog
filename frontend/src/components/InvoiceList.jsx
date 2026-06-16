@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Loader2, Receipt } from "lucide-react";
 import API from "../services/axios";
 import InvoiceCard from "./InvoiceCard";
+import { toast } from "react-toastify";
 
-export default function InvoiceList({}) {
+export default function InvoiceList() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,7 +15,8 @@ export default function InvoiceList({}) {
         const { data } = await API.get("/api/invoices/my");
         if (data.success) setInvoices(data.data);
         else setError(data.message);
-      } catch (err) {
+      } catch (error) {
+        toast.error(error?.message||"Failed to lad INvoices")
         setError("Could not load invoices.");
       } finally {
         setLoading(false);

@@ -123,7 +123,7 @@ export const logoutUser = createAsyncThunk(
       return res?.data;
     } catch (error) {
       dispatch(logout());
-      return rejectWithValue(err?.response?.data?.message || "Logout Failed");
+      return rejectWithValue(error?.response?.data?.message || "Logout Failed");
     }
   },
 );

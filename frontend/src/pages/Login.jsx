@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
@@ -18,19 +18,12 @@ const Login = () => {
 
   // --- Modal States ---
   const [openOtpModal, setOpenOtpModal] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState("");
   const [isForgotPwdOpen, setIsForgotPwdOpen] = useState(false);
-  const [shouldAutoSend, setShouldAutoSend] = useState(false);
 
-  /*   useEffect(() => {
-    if (access && user) {
-      if (user.role === "admin") {
-        navigate("/dashboard");
-      } else {
-        navigate("/profile");
-      }
-    }
-  }, [access, user, navigate]) */ const formik = useFormik({
+  const [unverifiedEmail] = useState("");
+  const [shouldAutoSend] = useState(false);
+
+  const formik = useFormik({
     initialValues: { email: "", password: "" },
     validationSchema: loginSchema,
     onSubmit: async (data, { resetForm }) => {
@@ -45,7 +38,7 @@ const Login = () => {
           navigate("/profile"); // ← existing users go here
         }
       } catch (err) {
-        // ...rest unchanged
+        toast.error(err?.message || "Login Failed");
       }
     },
   });

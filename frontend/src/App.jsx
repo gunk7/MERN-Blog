@@ -1,5 +1,4 @@
 import "./App.css";
-import { useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -7,7 +6,6 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import { useSelector } from "react-redux";
 import Login from "./pages/Login";
 import { ToastContainer } from "react-toastify";
 import Signup from "./pages/Signup";
@@ -24,7 +22,6 @@ import MyBlog from "./pages/blog/MyBlog";
 import PublicProfile from "./pages/PublicProfile";
 import FloatingAIHub from "./components/FloatingAIHub";
 import PlanSelection from "./pages/PlanSelection";
-import { selectTempEmail } from "./redux/selectors/authSelectors";
 import PaymentStatus from "./pages/PaymentStatus";
 
 function App() {

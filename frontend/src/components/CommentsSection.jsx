@@ -30,8 +30,10 @@ const LikeButton = ({
   const [optimisticCount, setOptimisticCount] = useState(initialLikes);
 
   useEffect(() => {
-    setOptimisticLiked(initialLiked);
-    setOptimisticCount(initialLikes);
+    Promise.resolve().then(() => {
+      setOptimisticLiked(initialLiked);
+      setOptimisticCount(initialLikes);
+    });
   }, [initialLiked, initialLikes]);
 
   const handleToggle = async () => {
@@ -189,7 +191,16 @@ const CommentInput = ({
 
 // Stable empty array — prevents useSelector returning a new [] reference each render
 const EMPTY_REPLIES = [];
-
+const timeAgo = (date) => {
+  const diff = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(mins / 60);
+  const days = Math.floor(hrs / 24);
+  if (days > 0) return `${days}d ago`;
+  if (hrs > 0) return `${hrs}h ago`;
+  if (mins > 0) return `${mins}m ago`;
+  return "just now";
+};
 // ─────────────────────────────────────────────
 // COMMENT CARD  (fully recursive — replies can have replies)
 // ─────────────────────────────────────────────
@@ -219,12 +230,7 @@ const CommentCard = ({
     comment.replyCount ?? comment.repliesCount ?? 0,
   );
 
-  const user = useSelector(selectCurrentUser);
-  const rawAuth = useSelector((state) => state.auth);
-  const rawUsers = useSelector((state) => state.users);
-
   const isOwner = currentUser?._id === (comment.author?._id || comment.userId);
-  const isReply = depth > 0;
 
   // Do NOT auto-fetch replies — wait for user interaction
   const handleToggleReplies = async () => {
@@ -242,17 +248,6 @@ const CommentCard = ({
     }
 
     setShowReplies(true);
-  };
-
-  const timeAgo = (date) => {
-    const diff = Date.now() - new Date(date).getTime();
-    const mins = Math.floor(diff / 60000);
-    const hrs = Math.floor(mins / 60);
-    const days = Math.floor(hrs / 24);
-    if (days > 0) return `${days}d ago`;
-    if (hrs > 0) return `${hrs}h ago`;
-    if (mins > 0) return `${mins}m ago`;
-    return "just now";
   };
 
   const handleEdit = async () => {
@@ -515,8 +510,9 @@ const CommentsSection = ({ postId }) => {
 
   useEffect(() => {
     dispatch(clearComments());
-    setPage(1);
+    Promise.resolve().then(() => setPage(1));
     loadComments(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
   const handleLoadMore = () => {

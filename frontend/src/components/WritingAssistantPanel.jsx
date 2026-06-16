@@ -49,6 +49,7 @@ const WritingAssistantPanel = ({
 
   useEffect(() => {
     onOpenChange?.(open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -72,11 +73,11 @@ const WritingAssistantPanel = ({
   }, [editor]);
 
   useEffect(() => {
-    if (result) setHasPendingResult(true);
+    if (result) Promise.resolve().then(() => setHasPendingResult(true));
   }, [result]);
 
   useEffect(() => {
-    if (open) setHasPendingResult(false);
+    if (open) Promise.resolve().then(() => setHasPendingResult(false));
   }, [open]);
 
   const reset = () => {

@@ -47,7 +47,7 @@ const adminBlogSlice = createSlice({
       state.page = action.payload;
     },
 
-    setLimit: (dtate, action) => {
+    setLimit: (state, action) => {
       state.limit = action.payload;
     },
 

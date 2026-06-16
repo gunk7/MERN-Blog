@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
   Search,
@@ -10,15 +10,8 @@ import {
   LayoutGrid,
   ChevronDown,
 } from "lucide-react";
-import {
-  isLoggedIn,
-  selectCurrentUser,
-} from "../../redux/selectors/authSelectors";
-import {
-  getAllBlogs,
-  getBlogsByUser,
-  searchUsers,
-} from "../../redux/thunks/blogThunks";
+import { isLoggedIn } from "../../redux/selectors/authSelectors";
+import { getAllBlogs, searchUsers } from "../../redux/thunks/blogThunks";
 import {
   setQuery,
   toggleCategory,
@@ -58,8 +51,6 @@ const formatDate = (d) =>
 const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { userId } = useParams();
-
   const {
     blogs,
     userBlogs,
@@ -72,7 +63,6 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
   } = useSelector((state) => state.blog);
 
   const isAuthenticated = useSelector(isLoggedIn);
-  const user = useSelector(selectCurrentUser);
   const [showAllChips, setShowAllChips] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const selectedCategories = query.categories || [];
@@ -98,48 +88,58 @@ const BlogFeed = ({ mode = "all", limit: propLimit = 6 }) => {
   };
 
   // Debounced fetch — fires on search, tab, or category change
-  useEffect(() => {
-    const t = setTimeout(async () => {
-      setIsTransitioning(true);
+  useEffect(
+    () => {
+      const t = setTimeout(async () => {
+        setIsTransitioning(true);
 
-      try {
-        if (showBlogs) {
-          await dispatch(getAllBlogs()).unwrap();
-        }
-
-        if (showAccounts) {
-          dispatch(clearUserSearch());
-
-          if (searchInput.trim()) {
-            await dispatch(searchUsers({ q: searchInput })).unwrap();
+        try {
+          if (showBlogs) {
+            await dispatch(getAllBlogs()).unwrap();
           }
-        }
-      } finally {
-        setIsTransitioning(false);
-      }
-    }, 600);
 
-    return () => clearTimeout(t);
-  }, [query.search, activeTab, JSON.stringify(query.categories)]);
+          if (showAccounts) {
+            dispatch(clearUserSearch());
+
+            if (searchInput.trim()) {
+              await dispatch(searchUsers({ q: searchInput })).unwrap();
+            }
+          }
+        } finally {
+          setIsTransitioning(false);
+        }
+      }, 600);
+
+      return () => clearTimeout(t);
+    }, // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query.search, activeTab, JSON.stringify(query.categories)],
+  );
   // Infinite scroll — load next page
-  useEffect(() => {
-    if (
-      inView &&
-      !loading &&
-      pagination.hasNextPage &&
-      mode !== "featured" &&
-      showBlogs
-    ) {
-      dispatch(setQuery({ page: query.page + 1 }));
-    }
-  }, [inView]);
+  useEffect(
+    () => {
+      if (
+        inView &&
+        !loading &&
+        pagination.hasNextPage &&
+        mode !== "featured" &&
+        showBlogs
+      ) {
+        dispatch(setQuery({ page: query.page + 1 }));
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [inView],
+  );
 
   // Fetch when page increments
-  useEffect(() => {
-    if (query.page > 1 && !loading && showBlogs) {
-      dispatch(getAllBlogs());
-    }
-  }, [query.page, activeTab, JSON.stringify(query.categories), query.search]);
+  useEffect(
+    () => {
+      if (query.page > 1 && !loading && showBlogs) {
+        dispatch(getAllBlogs());
+      }
+    }, // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query.page, activeTab, JSON.stringify(query.categories), query.search],
+  );
 
   // Tab change — search stays intact
   const handleTabChange = (tab) => dispatch(setActiveTab(tab));

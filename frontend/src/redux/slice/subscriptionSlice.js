@@ -7,10 +7,6 @@ import {
   fetchUpgradePlans,
   cancelSubscription,
   toggleAutoRenew,
-  submitRefundRequest,
-  addonCheckout,
-  upgradeCheckout,
-  
 } from "../thunks/subscriptionThunks";
 
 const subscriptionSlice = createSlice({

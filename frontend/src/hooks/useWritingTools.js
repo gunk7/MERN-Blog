@@ -394,7 +394,6 @@ export function useWritingTools({
     selectedText,
     savedRange,
 
-    lastAction: lastActionRef.current,
 
     resetAssist,
     assist,

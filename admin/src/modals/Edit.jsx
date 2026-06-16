@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   isLoggedIn,
@@ -17,7 +17,7 @@ import {
 import API from "../services/axios";
 import { isUsernameUnsuitable } from "../services/apiService";
 
-const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
+const Edit = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading } = useSelector((state) => state.users);
@@ -132,7 +132,7 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
 
   if (!isOpen) return null;
 
-  const BASE_URL = import.meta.env.VITE_API_IMG_URL;
+  //sconst BASE_URL = import.meta.env.VITE_API_IMG_URL;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-on-surface/20 backdrop-blur-md">

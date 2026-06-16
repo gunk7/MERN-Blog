@@ -32,6 +32,7 @@ import {
   addonCheckout,
   upgradeCheckout,
 } from "../redux/thunks/subscriptionThunks";
+import { toast } from "react-toastify";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const REFUND_REASONS = [
@@ -443,7 +444,7 @@ function InvoiceRow({ transactionId, user }) {
 
   useEffect(() => {
     if (!transactionId) {
-      setFetching(false);
+      Promise.resolve().then(() => setFetching(false));
       return;
     }
     const load = async () => {
@@ -452,7 +453,8 @@ function InvoiceRow({ transactionId, user }) {
           `/invoices/transaction/${transactionId}`,
         );
         setInvoice(data.success ? data.data : false);
-      } catch {
+      } catch (error) {
+        toast.error(error?.message || "Could not Load Subscription");
         setInvoice(false);
       } finally {
         setFetching(false);
@@ -782,9 +784,6 @@ export default function SubscriptionCard({ onGoToPlans }) {
   const isFree = sub.planSnapshot?.price === 0;
   const isActive = sub.status === "active";
   const isCancelled = sub.status === "cancelled";
-  const hasPendingRefund = refundData?.status === "pending";
-  const hasResolvedRefund =
-    refundData?.status === "approved" || refundData?.status === "rejected";
 
   // ── Cancelled state: show "get a new plan" button instead of upgrade panel ─
   if (isCancelled) {

@@ -49,3 +49,4 @@ const LogoutModal = ({ isOpen, onClose }) => {
     </div>
   );
 };
+export default LogoutModal;

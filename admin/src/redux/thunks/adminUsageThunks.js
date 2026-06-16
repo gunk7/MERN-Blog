@@ -3,7 +3,7 @@ import API from "../../services/axios";
 
 export const fetchAllUsage = createAsyncThunk(
   "admin/fetchAllUsage",
-  async (_, { rejectWithValue }) => {
+  async (month, page, limit, { rejectWithValue }) => {
     try {
       const response = await API.get("/api/admin/usage/all", {
         params: { month, page, limit },

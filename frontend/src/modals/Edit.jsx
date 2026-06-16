@@ -10,21 +10,16 @@ import { editProfileSchema } from "../validation/schemasValidation";
 import { getProfile, updateProfile } from "../redux/thunks/userThunks";
 import { X, Save, Loader2 } from "lucide-react";
 import { toast } from "react-toastify";
-import {
-  updateProfileByAdmin,
-  fetchAllUsers,
-} from "../redux/thunks/adminThunks";
 import API from "../services/axios";
 import { isUsernameUnsuitable } from "../services/apiService";
 
-const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
+const Edit = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading } = useSelector((state) => state.users);
   const access = useSelector(isLoggedIn);
   const today = new Date().toISOString().split("T")[0];
 
-  const adminSelected = useSelector((state) => state.admin.selectedUser);
   const { profile } = useSelector((state) => state.users);
   const user = useSelector(selectCurrentUser);
   const [countries, setCountries] = useState([]);
@@ -50,7 +45,7 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
     getCountries();
   }, []);
 
-  const currentData = adminSelected || profile?.userDetail;
+  const currentData = profile?.userDetail;
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -83,8 +78,7 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
     validationSchema: editProfileSchema,
     onSubmit: async (values) => {
       try {
-        const targetId =
-          adminSelected?._id || profile?.userDetail?._id || user?._id;
+        const targetId = profile?.userDetail?._id || user?._id;
         if (!targetId) return toast.error("User ID not found.");
 
         if (values.username !== currentData?.username) {
@@ -98,19 +92,11 @@ const Edit = ({ isOpen, onClose, userId, onSubmit }) => {
         if (selectedImage) formData.append("profilePic", selectedImage);
         if (removeImage) formData.append("removeImage", "true");
 
-        if (adminSelected) {
-          await dispatch(
-            updateProfileByAdmin({ userId: targetId, userData: formData }),
-          ).unwrap();
-          toast.success("Profile updated by Admin successfully");
-          dispatch(fetchAllUsers({ page: 1, limit: 5 }));
-        } else {
-          await dispatch(
-            updateProfile({ userId: targetId, userData: formData }),
-          ).unwrap();
-          toast.success("Profile updated successfully");
-          dispatch(getProfile());
-        }
+        await dispatch(
+          updateProfile({ userId: targetId, userData: formData }),
+        ).unwrap();
+        toast.success("Profile updated successfully");
+        dispatch(getProfile());
 
         onClose();
       } catch (error) {

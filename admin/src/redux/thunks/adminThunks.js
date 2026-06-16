@@ -7,10 +7,9 @@ export const fetchAllUsers = createAsyncThunk(
     try {
       const response = await API.get("/api/admin/", { params });
       const data = response.data || [];
-      console.log(response);
       return data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      return rejectWithValue(error?.response?.data?.message || error.message);
     }
   },
 );

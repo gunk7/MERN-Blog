@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectToken } from "../redux/selectors/authSelectors";
 
-const SESSION_LIMIT = 10;
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export function useChat() {
@@ -39,9 +39,6 @@ export function useChat() {
   const intervalRef = useRef(null);
   const mountedRef = useRef(true);
 
-  // ── Computed ─────────────────────────────────────────────────────────────
-
-  const isLimitReached = msgCount >= SESSION_LIMIT;
 
   // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -270,8 +267,6 @@ export function useChat() {
     setMsgCount,
     currentChatId,
     setCurrentChatId,
-    isLimitReached,
-    SESSION_LIMIT,
     handleSend,
     startNewChat,
   };

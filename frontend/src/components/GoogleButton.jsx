@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { googleLogin } from "../redux/slice/authSlice";
 import { getProfile } from "../redux/thunks/userThunks";
+import API from "../services/axios";
 
 const GoogleButton = () => {
   const dispatch = useDispatch();

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Calendar, X, Clock } from "lucide-react";
+import { useState } from "react";
+import { X, Clock } from "lucide-react";
 
 const ScheduleModal = ({ isOpen, onClose, onConfirm }) => {
   const [selectedDate, setSelectedDate] = useState("");

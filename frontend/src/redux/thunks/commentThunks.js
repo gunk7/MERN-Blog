@@ -93,7 +93,7 @@ export const deleteComment = createAsyncThunk(
 
 export const toggleLike = createAsyncThunk(
   "comments/toggleLike",
-  async ({ commentId, isLiked }, { rejectWithValue }) => {
+  async ({ commentId }, { rejectWithValue }) => {
     try {
       const { data } = await API.post(`/api/comments/like/${commentId}`);
 

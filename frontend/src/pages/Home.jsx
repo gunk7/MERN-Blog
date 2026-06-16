@@ -59,6 +59,7 @@ function QuoteSlider() {
   useEffect(() => {
     const id = setInterval(() => goTo((idx + 1) % QUOTES.length), 5000);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, phase]);
 
   const quote = QUOTES[idx];
@@ -359,9 +360,11 @@ const Home = () => {
   const [activeSection, setActiveSection] = useState(0);
 
   useEffect(() => {
-    if (heroVisible) setActiveSection(0);
-    else if (bentoInView && !access) setActiveSection(1);
-    else if (ctaInView && !access) setActiveSection(2);
+    Promise.resolve().then(() => {
+      if (heroVisible) setActiveSection(0);
+      else if (bentoInView && !access) setActiveSection(1);
+      else if (ctaInView && !access) setActiveSection(2);
+    });
   }, [heroVisible, bentoInView, ctaInView, access]);
 
   const scrollToSection = (elementRef) => {

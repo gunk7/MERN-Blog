@@ -57,12 +57,6 @@ const FieldLabel = ({ children }) => (
   </p>
 );
 
-const statusColor = {
-  draft: "bg-amber-100 text-amber-700",
-  published: "bg-emerald-100 text-emerald-700",
-  scheduled: "bg-blue-100 text-blue-700",
-};
-
 const BlogEditor = () => {
   const { id } = useParams();
   const isEditMode = Boolean(id);
@@ -81,8 +75,9 @@ const BlogEditor = () => {
   const [tagInput, setTagInput] = useState("");
   const [editor, setEditor] = useState(null);
   const [flipped, setFlipped] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+
+  const [panelOpen] = useState(false);
 
   useEffect(() => {
     if (isEditMode) dispatch(getBlogById(id));
@@ -92,13 +87,10 @@ const BlogEditor = () => {
   useEffect(() => {
     if (isEditMode && currentBlog && currentBlog._id === id) {
       if (currentBlog.coverImage) {
-        /* setPreview(
-          `${import.meta.env.VITE_API_IMG_URL}/${currentBlog.coverImage}`,
-        ); */
-        setPreview(currentBlog.coverImage);
+        Promise.resolve().then(() => setPreview(currentBlog.coverImage));
       }
     }
-  }, [currentBlog?._id, id, isEditMode]);
+  }, [currentBlog, currentBlog?._id, id, isEditMode]);
 
   useEffect(() => {
     if (createSuccess || updateSuccess) {
@@ -229,6 +221,7 @@ const BlogEditor = () => {
 
     return () => window.removeEventListener("beforeunload", handleUnload);
   }, [formik.values, isEditMode, draftKey, draftRestored]);
+
   // RESTORE DRAFT
   useEffect(() => {
     if (isEditMode || draftRestored) return;
@@ -246,8 +239,7 @@ const BlogEditor = () => {
         toastId: "draft-restored",
       });
 
-      setDraftRestored(true);
-
+      Promise.resolve().then(() => setDraftRestored(true));
       return;
     }
 
@@ -275,8 +267,10 @@ const BlogEditor = () => {
       }
     }
 
-    setDraftRestored(true);
+    Promise.resolve().then(() => setDraftRestored(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, draft, draftKey, draftRestored]);
+
   const removeTag = (tag) =>
     formik.setFieldValue(
       "tags",

@@ -134,8 +134,7 @@ const AdminBlogViewer = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const imgUrl = import.meta.env.VITE_API_IMG_URL;
-
+ 
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

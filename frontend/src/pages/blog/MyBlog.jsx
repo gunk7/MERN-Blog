@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -51,61 +51,67 @@ const MyBlogs = () => {
     return (userBlogs || []).filter((blog) => blog.status === activeTab);
   }, [userBlogs, activeTab]);
 
-  const handleDelete = async (id) => {
-    const result = await confirmAction(
-      "Are you sure?",
-      "Permanently remove this Blog from your Blogs?",
-      "warning",
-      "Delete",
-    );
-
-    if (result.isConfirmed) {
-      dispatch(deleteBlog(id)).then(() => {
-        toast.error("Story deleted.");
-        navigate("/my-blogs");
-      });
-    }
-  };
-
-  const toggleStatus = async (blog) => {
-    // under_review → can only move to draft, not published directly
-    if (blog.status === "under_review") {
+  const handleDelete = useCallback(
+    async (id) => {
       const result = await confirmAction(
-        "Move to Draft?",
-        "You can edit this post and republish once changes are made.",
+        "Are you sure?",
+        "Permanently remove this Blog from your Blogs?",
+        "warning",
+        "Delete",
+      );
+
+      if (result.isConfirmed) {
+        dispatch(deleteBlog(id)).then(() => {
+          toast.error("Story deleted.");
+          navigate("/my-blogs");
+        });
+      }
+    },
+    [dispatch, navigate],
+  );
+
+  const toggleStatus = useCallback(
+    async (blog) => {
+      // under_review → can only move to draft, not published directly
+      if (blog.status === "under_review") {
+        const result = await confirmAction(
+          "Move to Draft?",
+          "You can edit this post and republish once changes are made.",
+          "question",
+          "Yes, move to draft",
+        );
+        if (!result.isConfirmed) return;
+
+        const formData = new FormData();
+        formData.append("status", "draft");
+        dispatch(updateBlog({ id: blog._id, formData }))
+          .unwrap()
+          .then(() =>
+            toast.success("Moved to draft — make your edits and republish"),
+          )
+          .catch((e) => toast.error(e || "Failed"));
+        return;
+      }
+
+      // normal published ↔ draft toggle
+      const newStatus = blog.status === "published" ? "draft" : "published";
+      const result = await confirmAction(
+        "Change Status?",
+        `Do you want to move this Blog to ${newStatus}?`,
         "question",
-        "Yes, move to draft",
+        "Yes, move it",
       );
       if (!result.isConfirmed) return;
 
       const formData = new FormData();
-      formData.append("status", "draft");
+      formData.append("status", newStatus);
       dispatch(updateBlog({ id: blog._id, formData }))
         .unwrap()
-        .then(() =>
-          toast.success("Moved to draft — make your edits and republish"),
-        )
+        .then(() => toast.success(`Moved to ${newStatus}`))
         .catch((e) => toast.error(e || "Failed"));
-      return;
-    }
-
-    // normal published ↔ draft toggle
-    const newStatus = blog.status === "published" ? "draft" : "published";
-    const result = await confirmAction(
-      "Change Status?",
-      `Do you want to move this Blog to ${newStatus}?`,
-      "question",
-      "Yes, move it",
-    );
-    if (!result.isConfirmed) return;
-
-    const formData = new FormData();
-    formData.append("status", newStatus);
-    dispatch(updateBlog({ id: blog._id, formData }))
-      .unwrap()
-      .then(() => toast.success(`Moved to ${newStatus}`))
-      .catch((e) => toast.error(e || "Failed"));
-  };
+    },
+    [dispatch],
+  );
   // TanStack Table Column Definitions
   const columns = useMemo(
     () => [
@@ -240,9 +246,10 @@ const MyBlogs = () => {
         },
       },
     ],
-    [navigate],
+    [navigate, toggleStatus, handleDelete],
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: filteredData,
     columns,

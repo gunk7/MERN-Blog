@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { isLoggedIn } from "../redux/selectors/authSelectors";
 import { useNavigate } from "react-router-dom";
 import { changePassword, changePasswordReq } from "../redux/thunks/authThunks";
+import { toast } from "react-toastify";
 
 const UpdatePassword = ({ isOpen, onClose }) => {
   const dispatch = useDispatch();
@@ -40,8 +41,10 @@ const UpdatePassword = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       await dispatch(changePasswordReq());
+      toast.success("OTP sent Successfully");
       setStep(2);
-    } catch (err) {
+    } catch (error) {
+      toast.error(error?.message || "Failed to send OTP. Please try again.");
       setError("Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);

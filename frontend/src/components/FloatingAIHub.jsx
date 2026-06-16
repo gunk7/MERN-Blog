@@ -7,7 +7,6 @@ import {
   RefreshCw,
   Mic,
   Check,
-  X,
   Tag,
   FileText,
   History,
@@ -56,7 +55,7 @@ const Tooltip = ({ text, children }) => (
 // ── QuickChip ─────────────────────────────────────────────────────────────────
 
 const QuickChip = ({
-  icon: Icon,
+  icon: IconComponent, // eslint-disable-line no-unused-vars
   label,
   onClick,
   active,
@@ -76,7 +75,7 @@ const QuickChip = ({
               : "bg-white border-primary/10 text-on-surface hover:bg-surface-high hover:border-primary/20"
         }`}
     >
-      <Icon size={11} />
+      <IconComponent size={11} />
       {label}
     </button>
   );
@@ -108,6 +107,7 @@ const FloatingAIHub = ({
 
   useEffect(() => {
     if (isOpen) fetchUsage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   // ── Hooks ───────────────────u───────────────────────────────────────────────
 
@@ -117,12 +117,9 @@ const FloatingAIHub = ({
     input,
     setInput,
     isTyping,
-    msgCount,
     setMsgCount,
     currentChatId,
     setCurrentChatId,
-    isLimitReached,
-    SESSION_LIMIT,
     handleSend,
     startNewChat: _startNewChat,
   } = useChat();
@@ -205,6 +202,7 @@ const FloatingAIHub = ({
 
   useEffect(() => {
     if (view === "history") fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   // Disable text selection while assist is loading or a result is pending apply

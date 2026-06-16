@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { Mail, Lock, User } from "lucide-react";
 import { signupSchema } from "../validation/schemasValidation";
 import { signup } from "../redux/thunks/authThunks"; // ✅ import cancelVerification
 import { cancelVerification } from "../redux/slice/authSlice";
 import {
-  isLoggedIn,
   selectAuthLoading,
   selectIsVerifying,
   selectTempEmail,
@@ -18,26 +17,12 @@ import { isUsernameUnsuitable } from "../services/apiService";
 import GoogleButton from "../components/GoogleButton";
 
 const Signup = () => {
-  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const access = useSelector(isLoggedIn);
   const loading = useSelector(selectAuthLoading);
   const isVerifying = useSelector(selectIsVerifying);
   const tempEmail = useSelector(selectTempEmail);
 
   const [showModal, setShowModal] = useState(false); // ✅ start as false
-
-  useEffect(() => {
-    if (access) navigate("/profile");
-  }, [access, navigate]);
-
-  useEffect(() => {
-    if (isVerifying) {
-      setShowModal(true);
-    } else {
-      setShowModal(false);
-    }
-  }, [isVerifying]);
 
   const formik = useFormik({
     initialValues: { username: "", email: "", password: "" },
@@ -55,6 +40,7 @@ const Signup = () => {
         }
         await dispatch(signup(values)).unwrap();
         toast.success("Signup Successfully! Please verify your email.");
+        setShowModal(true);
         resetForm();
       } catch (error) {
         toast.error(error || "Signup failed");

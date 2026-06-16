@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { toggleBlog } from "../redux/thunks/blogThunks";
 
 const LikeButton = ({ postId, initialCount = 0, initialLiked = false }) => {
