@@ -111,7 +111,7 @@ export function useChat() {
       fullTextRef.current = "";
       shownTextRef.current = "";
 
-      const res = await fetch(`${API_BASE}/chat/message`, {
+      const res = await fetch(`${API_BASE}/api/chat/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -192,7 +192,7 @@ const WritingAssistantPanel = ({
       <div
         className={`fixed top-20 right-0 h-[calc(100vh-5rem)] z-40 flex flex-row items-center
           transition-transform duration-300 ease-in-out
-          ${open ? "translate-x-0" : "translate-x-[288px]"}`}
+          ${open ? "translate-x-0" : "translate-x-72"}`}
       >
         {/* Tab trigger — glued to left edge, travels with the panel */}
         <button

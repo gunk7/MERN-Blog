@@ -57,19 +57,34 @@ export const blogSchema = Yup.object({
 
   description: Yup.string()
     .trim()
-    .required("Description is required")
-    .max(200, "Description must be 200 characters or less"),
+    .max(200, "Description must be 200 characters or less")
+    .when("status", {
+      is: (status) => status !== "draft",
+      then: (schema) => schema.required("Description is required"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
 
   contentHtml: Yup.string()
     .trim()
-    .required("Content is required")
-    .max(20000, "Content is too large"),
+    .max(20000, "Content is too large")
+    .when("status", {
+      is: (status) => status !== "draft",
+      then: (schema) => schema.required("Content is required"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
 
   contentJson: Yup.object(),
 
   category: Yup.string()
-    .required("Category is required")
-    .oneOf(CATEGORIES, "Please select a valid category"),
+    .oneOf(CATEGORIES, "Please select a valid category")
+    .when("status", {
+      is: (status) => status !== "draft",
+      then: (schema) =>
+        schema
+          .required("Category is required")
+          .notOneOf(["None"], "Please select a category"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
 
   status: Yup.string().oneOf(BLOG_STATUSES).required(),
 
@@ -97,42 +112,40 @@ export const blogSchema = Yup.object({
     .max(10, "You can only add up to 10 tags")
     .default([]),
 
-  coverImage: Yup.mixed()
-    .test("cover-required", "A cover image is required", (value) => {
-      if (typeof value === "string" && value.length > 0) return true;
-      if (value instanceof File) return true;
-      return false;
-    })
-    .test("fileType", "Unsupported image format", (value) => {
-      if (typeof value === "string") return true;
-
-      if (value instanceof File) {
-        return ["image/jpeg", "image/png", "image/webp"].includes(value.type);
-      }
-
-      return false;
-    })
-    .test("fileSize", "File size is too large (Max 10MB)", (value) => {
-      if (typeof value === "string") return true;
-
-      if (value instanceof File) {
-        return value.size <= 10 * 1024 * 1024;
-      }
-
-      return true;
-    }),
+  coverImage: Yup.mixed().when("status", {
+    is: (status) => status !== "draft",
+    then: (schema) =>
+      schema
+        .test("cover-required", "A cover image is required", (value) => {
+          if (typeof value === "string" && value.length > 0) return true;
+          if (value instanceof File) return true;
+          return false;
+        })
+        .test("fileType", "Unsupported image format", (value) => {
+          if (typeof value === "string") return true;
+          if (value instanceof File) {
+            return ["image/jpeg", "image/png", "image/webp"].includes(
+              value.type,
+            );
+          }
+          return false;
+        })
+        .test("fileSize", "File size is too large (Max 10MB)", (value) => {
+          if (typeof value === "string") return true;
+          if (value instanceof File) return value.size <= 10 * 1024 * 1024;
+          return true;
+        }),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 
   images: Yup.array()
     .of(
       Yup.object({
         url: Yup.string().required("Image URL is required"),
-
-        filename: Yup.string().required("Image filename is required"),
-
+        publicId: Yup.string().nullable(),
         size: Yup.number()
           .max(5 * 1024 * 1024, "Each image must be under 5MB")
           .nullable(),
-
         order: Yup.number().nullable(),
       }),
     )

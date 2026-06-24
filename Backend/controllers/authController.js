@@ -94,7 +94,7 @@ exports.signup = async (req, res) => {
         email,
         password,
         otp: {
-          code: otp, // ← plain, hook will hash it
+          code: otp, 
           type: "email_verification",
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
           attempts: 0,

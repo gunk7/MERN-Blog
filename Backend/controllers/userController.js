@@ -182,7 +182,7 @@ exports.updateUserProfile = async (req, res) => {
         }
       }
       if (removeImage === "true") {
-        profilePicUrl = DEFAULT_AVATAR; // or a default blank URL from Cloudinary
+        profilePicUrl = DEFAULT_AVATAR; 
         profilePicPublicId = null;
       } else if (req.cloudinaryFile) {
         profilePicUrl = req.cloudinaryFile.secure_url;

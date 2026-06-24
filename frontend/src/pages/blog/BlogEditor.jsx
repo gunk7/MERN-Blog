@@ -27,9 +27,9 @@ import {
 import { selectCurrentUser } from "../../redux/selectors/authSelectors";
 import { toast } from "react-toastify";
 import { confirmExit } from "../../services/modalServices";
-import FriendlyMarkdownEditor from "../../components/FriendlyMarkdownEditor";
-//import WritingAssistantPanel from "../../components/WritingAssistantPanel";
+import FriendlyMarkdownEditor from "../../components/editor/FriendlyMarkdownEditor";
 import FloatingAIHub from "../../components/FloatingAIHub";
+import { blogSchema } from "../../validation/schemasValidation";
 
 const BLOG_STATUSES = ["draft", "published", "scheduled"];
 const CATEGORIES = [
@@ -51,9 +51,10 @@ const CATEGORIES = [
   "Personal",
 ];
 
-const FieldLabel = ({ children }) => (
+const FieldLabel = ({ children, required }) => (
   <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 mb-2">
     {children}
+    {required && <span className="text-rose-500 ml-0.5">*</span>}
   </p>
 );
 
@@ -78,6 +79,13 @@ const BlogEditor = () => {
   const [draftRestored, setDraftRestored] = useState(false);
 
   const [panelOpen] = useState(false);
+  const [originalStatus, setOriginalStatus] = useState(null);
+  const attemptedStatusRef = React.useRef("draft");
+  const fallbackTriedRef = React.useRef(false);
+  const canFallbackToDraft =
+    !isEditMode ||
+    originalStatus === "draft" ||
+    originalStatus === "under_review";
 
   useEffect(() => {
     if (isEditMode) dispatch(getBlogById(id));
@@ -89,11 +97,15 @@ const BlogEditor = () => {
       if (currentBlog.coverImage) {
         Promise.resolve().then(() => setPreview(currentBlog.coverImage));
       }
+      if (originalStatus === null) {
+        setOriginalStatus(currentBlog.status);
+      }
     }
-  }, [currentBlog, currentBlog?._id, id, isEditMode]);
+  }, [currentBlog, currentBlog?._id, id, isEditMode, originalStatus]);
 
   useEffect(() => {
     if (createSuccess || updateSuccess) {
+      fallbackTriedRef.current = false;
       sessionStorage.removeItem(draftKey);
 
       dispatch(clearDraft());
@@ -109,9 +121,59 @@ const BlogEditor = () => {
     }
 
     if (error) {
-      toast.error(error, {
-        position: "bottom-right",
-      });
+      const attemptedStatus = attemptedStatusRef.current;
+      const wasPublishAttempt =
+        attemptedStatus === "published" || attemptedStatus === "scheduled";
+
+      if (
+        wasPublishAttempt &&
+        canFallbackToDraft &&
+        !fallbackTriedRef.current
+      ) {
+        fallbackTriedRef.current = true;
+
+        toast.error(
+          `Couldn't ${attemptedStatus === "scheduled" ? "schedule" : "publish"} your post (${error}). Saved as a draft instead so you don't lose your work.`,
+          { position: "bottom-right", autoClose: 5000 },
+        );
+
+        dispatch(clearBlogState());
+        formik.setFieldValue("status", "draft");
+
+        const draftFormData = new FormData();
+        draftFormData.append("title", formik.values.title);
+        draftFormData.append("description", formik.values.description);
+        draftFormData.append(
+          "contentHtml",
+          formik.values.contentHtml?.trim() || "",
+        );
+        draftFormData.append(
+          "contentJson",
+          JSON.stringify(formik.values.contentJson || null),
+        );
+        draftFormData.append("category", formik.values.category);
+        draftFormData.append("status", "draft");
+        formik.values.tags.forEach((tag) => draftFormData.append("tags", tag));
+        if (formik.values.coverImage instanceof File) {
+          draftFormData.append("coverImage", formik.values.coverImage);
+        } else if (
+          typeof formik.values.coverImage === "string" &&
+          formik.values.coverImage
+        ) {
+          draftFormData.append("existingCoverImage", formik.values.coverImage);
+        }
+        draftFormData.append(
+          "images",
+          JSON.stringify(formik.values.images || []),
+        );
+
+        if (isEditMode) dispatch(updateBlog({ id, formData: draftFormData }));
+        else dispatch(createBlog(draftFormData));
+      } else {
+        toast.error(error, {
+          position: "bottom-right",
+        });
+      }
     }
   }, [
     createSuccess,
@@ -121,10 +183,12 @@ const BlogEditor = () => {
     navigate,
     isEditMode,
     draftKey,
+    canFallbackToDraft,
   ]);
 
   const formik = useFormik({
     enableReinitialize: true,
+    validationSchema: blogSchema,
     initialValues: {
       title: isEditMode && currentBlog ? currentBlog.title || "" : "",
       description:
@@ -145,6 +209,8 @@ const BlogEditor = () => {
       images: isEditMode && currentBlog ? currentBlog.images || [] : [],
     },
     onSubmit: async (values) => {
+      attemptedStatusRef.current = values.status;
+      fallbackTriedRef.current = false;
       const formData = new FormData();
       formData.append("title", values.title);
       formData.append("description", values.description);
@@ -408,6 +474,11 @@ const BlogEditor = () => {
                   onEditorReady={setEditor}
                 />
               </form>
+              {formik.touched.contentHtml && formik.errors.contentHtml && (
+                <span className="text-[10px] text-rose-500 font-bold mt-2 block">
+                  {formik.errors.contentHtml}
+                </span>
+              )}
             </div>
           </div>
 
@@ -438,7 +509,7 @@ const BlogEditor = () => {
                 <button
                   type="button"
                   onClick={() => formik.handleSubmit()}
-                  disabled={loading}
+                  disabled={loading || !formik.isValid}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-primary/90 transition-all disabled:opacity-50"
                 >
                   {loading ? (
@@ -473,19 +544,13 @@ const BlogEditor = () => {
                 <div className="space-y-7">
                   {/* Cover preview on back */}
                   <div>
-                    <FieldLabel>Cover Image</FieldLabel>
+                    <FieldLabel required={formik.values.status !== "draft"}>
+                      Cover Image
+                    </FieldLabel>
                     {preview ? (
                       <div className="relative w-full h-48 rounded-2xl overflow-hidden border border-primary/10 group">
                         <img
-                          src={
-                            /*   preview.startsWith("blob:") ||
-                            preview.startsWith("http") ||
-                            preview.startsWith("data:")
-                              ? preview
-                              : `${import.meta.env.VITE_API_IMG_URL}/${preview}`
-                           */
-                            preview
-                          }
+                          src={preview}
                           alt="Cover"
                           className="w-full h-full object-cover"
                         />
@@ -525,11 +590,18 @@ const BlogEditor = () => {
                         />
                       </label>
                     )}
+                    {formik.errors.coverImage && (
+                      <span className="text-[10px] text-rose-500 font-bold mt-1 block">
+                        {formik.errors.coverImage}
+                      </span>
+                    )}
                   </div>
 
                   {/* Description */}
                   <div>
-                    <FieldLabel>Short Description</FieldLabel>
+                    <FieldLabel required={formik.values.status !== "draft"}>
+                      Short Description
+                    </FieldLabel>
                     <div className="relative">
                       <textarea
                         rows={4}
@@ -543,6 +615,12 @@ const BlogEditor = () => {
                         {formik.values.description.length}/200
                       </span>
                     </div>
+                    {formik.touched.description &&
+                      formik.errors.description && (
+                        <span className="text-[10px] text-rose-500 font-bold mt-1 block">
+                          {formik.errors.description}
+                        </span>
+                      )}
                   </div>
                 </div>
 
@@ -550,7 +628,9 @@ const BlogEditor = () => {
                 <div className="space-y-7">
                   {/* Category */}
                   <div>
-                    <FieldLabel>Category</FieldLabel>
+                    <FieldLabel required={formik.values.status !== "draft"}>
+                      Category
+                    </FieldLabel>
                     <select
                       className="w-full bg-surface-low rounded-2xl px-4 py-3 text-sm text-on-surface border border-primary/10 focus:border-primary/40 outline-none appearance-none transition-colors"
                       {...formik.getFieldProps("category")}
@@ -561,6 +641,11 @@ const BlogEditor = () => {
                         </option>
                       ))}
                     </select>
+                    {formik.touched.category && formik.errors.category && (
+                      <span className="text-[10px] text-rose-500 font-bold mt-1 block">
+                        {formik.errors.category}
+                      </span>
+                    )}
                   </div>
 
                   {/* Status */}
@@ -588,7 +673,7 @@ const BlogEditor = () => {
                   {/* Schedule */}
                   {formik.values.status === "scheduled" && (
                     <div>
-                      <FieldLabel>Publication Date</FieldLabel>
+                      <FieldLabel required>Publication Date</FieldLabel>
                       <div className="flex items-center gap-2 bg-surface-low rounded-2xl px-4 py-3 border border-primary/10">
                         <Calendar
                           size={14}
@@ -600,6 +685,12 @@ const BlogEditor = () => {
                           {...formik.getFieldProps("scheduledFor")}
                         />
                       </div>
+                      {formik.touched.scheduledFor &&
+                        formik.errors.scheduledFor && (
+                          <span className="text-[10px] text-rose-500 font-bold mt-1 block">
+                            {formik.errors.scheduledFor}
+                          </span>
+                        )}
                     </div>
                   )}
 
@@ -668,20 +759,6 @@ const BlogEditor = () => {
         </div>
       </div>
 
-      {/* ── AI panel — fixed, always above both faces ── */}
-      {/* <WritingAssistantPanel
-        editor={editor}
-        showSummary={false}
-        onOpenChange={setPanelOpen}
-        onTagsGenerated={(tags) => {
-          const existing = formik.values.tags;
-          const merged = [
-            ...existing,
-            ...tags.filter((t) => !existing.includes(t)),
-          ].slice(0, 10);
-          formik.setFieldValue("tags", merged);
-        }}
-      /> */}
       <FloatingAIHub
         editor={editor}
         showWritingTools={true}

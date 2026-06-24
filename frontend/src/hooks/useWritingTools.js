@@ -86,7 +86,6 @@ export function useWritingTools({
       savedRangeRef.current = { from, to };
       setSavedRange({ from, to });
       setSelectedText(text);
-      editor.commands.setMark("highlight", { color: "#ede9fe" });
     };
 
     editor.on("selectionUpdate", update);
@@ -168,7 +167,7 @@ export function useWritingTools({
     lastActionRef.current = { action, tone };
 
     try {
-      const { data } = await API.post("/chat/writing-assist", {
+      const { data } = await API.post("/api/chat/writing-assist", {
         text: selectedText || editor?.getText() || docText,
         action,
         ...(tone && { tone }),
@@ -283,7 +282,7 @@ export function useWritingTools({
     setAssistLoading(true);
 
     try {
-      const { data } = await API.post("/chat/tags", {
+      const { data } = await API.post("/api/chat/tags", {
         text: editor?.getText() || docText,
       });
 
@@ -341,7 +340,7 @@ export function useWritingTools({
     try {
       const text = isEditorMode ? selectedText || editor.getText() : docText;
 
-      const { data } = await API.post("/chat/summary", {
+      const { data } = await API.post("/api/chat/summary", {
         text,
         isSelection: isEditorMode && !!selectedText,
       });

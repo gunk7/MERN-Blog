@@ -8,7 +8,7 @@ export function useUsage() {
   const fetchUsage = useCallback(async () => {
     try {
       setLoadingUsage(true);
-      const { data } = await API.get("/chat/usage/me");
+      const { data } = await API.get("/api/chat/usage/me");
       if (data.success) setUsage(data.usage);
     } catch {
       // fail silently — usage display is non-critical

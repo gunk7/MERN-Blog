@@ -403,7 +403,7 @@ exports.updateBlog = async (req, res) => {
 exports.uploadInlineImage = async (req, res) => {
   try {
     console.log("req.files:", req.files);
-  console.log("req.cloudinaryFiles:", req.cloudinaryFiles);
+    console.log("req.cloudinaryFiles:", req.cloudinaryFiles);
     if (!req.cloudinaryFiles?.image?.length) {
       return res.status(400).json({
         success: false,
@@ -432,9 +432,10 @@ exports.uploadInlineImage = async (req, res) => {
 
 exports.getAllBlogs = async (req, res) => {
   try {
+    console.log(req.query);
     const { search, category, page, limit } = req.query;
 
-    const matchCriteria = { status: "published", deletedAt: null };
+    const matchCriteria = { status: "published" };
 
     if (search && search.trim()) {
       matchCriteria.$or = [
@@ -468,7 +469,7 @@ exports.getAllBlogs = async (req, res) => {
         },
       },
 
-      { $unwind: "$author" },
+      { $unwind: { path: "$author", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "userdetails",
@@ -507,6 +508,7 @@ exports.getAllBlogs = async (req, res) => {
       page,
       limit,
     });
+    console.log(data);
 
     res.status(200).json({
       success: true,

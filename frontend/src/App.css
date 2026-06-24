@@ -12,12 +12,12 @@
   --color-surface-high: #f0eaff;
   --color-surface-highest: #e9e2f8;
   --color-surface-lowest: #ffffff;
-  --color-surface-editor: #fdfcff; /* ← subtle canvas tint */
+  --color-surface-editor: #fdfcff;
 
   --color-on-surface: #261e35;
   --color-on-surface-variant: #6b637a;
 
-  /* prose color hooks for @tailwindcss/typography */
+  /* Prose Color Hooks */
   --color-prose-headings: #261e35;
   --color-prose-body: #261e35;
   --color-prose-links: #6a5188;
@@ -26,7 +26,7 @@
   --color-prose-quotes: #6b637a;
   --color-prose-hr: #e9e2f8;
 
-  /* --- Font Families — Times New Roman kept --- */
+  /* --- Font Families --- */
   --font-display: "Times New Roman", Times, serif;
   --font-body: "Times New Roman", Times, serif;
 
@@ -37,6 +37,8 @@
 
   /* --- Transition & Animation --- */
   --ease-editorial: cubic-bezier(0.23, 1, 0.32, 1);
+  --animation-reveal: reveal 1s var(--ease-editorial) forwards;
+  --animation-float: float 15s ease-in-out infinite;
 
   @keyframes reveal {
     from {
@@ -48,7 +50,6 @@
       transform: translateY(0);
     }
   }
-  --animation-reveal: reveal 1s var(--ease-editorial) forwards;
 
   @keyframes float {
     0%,
@@ -62,12 +63,11 @@
       transform: translate(-20px, 20px) scale(0.9);
     }
   }
-  --animation-float: float 15s ease-in-out infinite;
 }
 
+/* ── Custom Utilities ─────────────────────────────────────────────────────── */
 @utility layout-new-age {
-  @apply min-h-screen bg-surface relative overflow-hidden
-         flex flex-col justify-between p-8 sm:p-20;
+  @apply min-h-screen bg-surface relative overflow-hidden flex flex-col justify-between p-8 sm:p-20;
 }
 
 @utility text-reveal {
@@ -75,27 +75,21 @@
 }
 
 @utility card-auth {
-  @apply bg-white border border-black/5 rounded-4xl sm:rounded-[4xl]
-         p-5 sm:p-10 shadow-lavender
-         w-[calc(100%-2rem)] max-w-110 mx-auto
-         transition-all duration-500 ease-editorial hover:-translate-y-1
-         overflow-hidden box-border;
+  @apply bg-white border border-black/5 rounded-4xl p-5 sm:p-10 shadow-lavender
+         w-[calc(100%-2rem)] max-w-110 mx-auto transition-all duration-500 
+         ease-editorial hover:-translate-y-1 overflow-hidden box-border;
 }
 
 @utility input-editorial {
-  @apply bg-surface-low border border-primary/10
-         p-3 sm:p-4 rounded-xl sm:rounded-2xl
+  @apply bg-surface-low border border-primary/10 p-3 sm:p-4 rounded-xl sm:rounded-2xl
          text-base outline-none focus:ring-2 focus:ring-primary-fixed-dim
-         transition-all text-on-surface
-         w-full box-border block;
+         transition-all text-on-surface w-full box-border block;
 }
 
 @utility btn-editorial {
-  @apply bg-primary hover:bg-primary-container text-white
-         p-3 sm:p-4 rounded-full font-bold
-         text-base sm:text-lg shadow-lg transition-all
-         flex items-center justify-center gap-3
-         active:scale-95 disabled:opacity-50 w-full;
+  @apply bg-primary hover:bg-primary-container text-white p-3 sm:p-4 rounded-full 
+         font-bold text-base sm:text-lg shadow-lg transition-all flex items-center 
+         justify-center gap-3 active:scale-95 disabled:opacity-50 w-full;
 }
 
 @utility table-container {
@@ -123,9 +117,7 @@
 }
 
 @utility glass-panel {
-  @apply bg-white/70 backdrop-blur-xl border border-white/20
-         shadow-lavender rounded-4xl transition-all
-         duration-500 ease-editorial;
+  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-lavender rounded-4xl transition-all duration-500 ease-editorial;
 }
 
 @utility pop-blob {
@@ -136,10 +128,6 @@
     var(--color-primary)
   );
   animation: var(--animation-float);
-}
-
-body.ai-panel-open .ai-panel-shift {
-  margin-right: 26rem;
 }
 
 @utility skeleton-editorial {
@@ -169,10 +157,26 @@ body.ai-panel-open .ai-panel-shift {
   animation: shimmer 1.2s linear infinite;
 }
 
+@utility btn-home {
+  @apply btn-editorial;
+  width: auto !important;
+}
+
+/* ── Layout Shifts & Base Overrides ────────────────────────────────────────── */
+body.ai-panel-open .ai-panel-shift {
+  margin-right: 26rem;
+}
+
 .ai-panel-shift {
   transition: margin-right 0.3s ease-in-out;
 }
 
+body {
+  @apply bg-surface font-body antialiased min-h-screen;
+  font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+}
+
+/* ── Keyframe Utilities ───────────────────────────────────────────────────── */
 @keyframes blink {
   0%,
   100% {
@@ -182,7 +186,6 @@ body.ai-panel-open .ai-panel-shift {
     opacity: 0;
   }
 }
-
 @keyframes streamFadeIn {
   from {
     opacity: 0;
@@ -193,7 +196,6 @@ body.ai-panel-open .ai-panel-shift {
     transform: translateY(0);
   }
 }
-
 @keyframes shimmer {
   0% {
     transform: translateX(-120%);
@@ -202,7 +204,6 @@ body.ai-panel-open .ai-panel-shift {
     transform: translateX(220%);
   }
 }
-
 @keyframes pulseSoft {
   0%,
   100% {
@@ -212,11 +213,18 @@ body.ai-panel-open .ai-panel-shift {
     opacity: 1;
   }
 }
+@keyframes orbit-fade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
 
 .stream-fade {
   animation: streamFadeIn 0.14s ease-out;
 }
-
 .stream-cursor {
   display: inline-block;
   width: 2px;
@@ -227,16 +235,6 @@ body.ai-panel-open .ai-panel-shift {
   border-radius: 2px;
   animation: blink 0.8s step-end infinite;
 }
-
-@keyframes orbit-fade {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.1;
-  }
-}
-
 .orbit-dot {
   position: absolute;
   width: 3px;
@@ -248,48 +246,35 @@ body.ai-panel-open .ai-panel-shift {
   animation: orbit-fade 1s linear infinite;
 }
 
-body {
-  @apply bg-surface font-body antialiased min-h-screen;
-  font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
-}
-
-/* ── TipTap editor — matches MarkdownRenderer preview styles ─────────────── */
-
+/* ── TipTap Typographic Engine Customizer ─────────────────────────────────── */
 .tiptap {
   @apply outline-none;
 }
-
 .tiptap blockquote {
-  @apply border-l-[3px] border-primary bg-primary-fixed
-         pl-5 py-4 pr-5 my-7 rounded-r-2xl
-         italic text-on-surface-variant text-[1.02rem] leading-relaxed;
+  @apply border-l-[3px] border-primary bg-primary-fixed pl-5 py-4 pr-5 my-7 rounded-r-2xl italic text-on-surface-variant text-[1.02rem] leading-relaxed;
 }
-
 .tiptap blockquote p {
   @apply mb-0 text-on-surface-variant;
 }
-
 .tiptap pre {
-  @apply bg-surface-high text-on-surface
-         border border-primary/15 rounded-2xl
-         p-5 my-6 overflow-x-auto
-         font-mono text-sm leading-relaxed
-         shadow-sm;
+  @apply bg-surface-high text-on-surface border border-primary/15 rounded-2xl p-5 my-6 overflow-x-auto font-mono text-sm leading-relaxed shadow-sm;
 }
-
 .tiptap pre code {
   @apply bg-transparent border-none p-0 text-inherit;
   font-size: inherit;
 }
-
 .tiptap code {
-  @apply bg-primary-fixed text-primary
-         border border-primary/20
-         px-1.5 py-0.5 rounded-md
-         font-mono text-[0.82em];
+  @apply bg-primary-fixed text-primary border border-primary/20 px-1.5 py-0.5 rounded-md font-mono text-[0.82em];
 }
-/* btn-editorial override — allow auto width on home page */
-@utility btn-home {
-  @apply btn-editorial;
-  width: auto !important;
+table.is-active-table {
+  outline: 2px solid rgba(168, 85, 247, 0.8);
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.ProseMirror img.img-highlight {
+  outline: 3px solid rgb(168, 85, 247);
+  outline-offset: 4px;
+  border-radius: 1rem;
+  transition: outline 0.15s ease;
 }

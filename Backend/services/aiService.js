@@ -171,7 +171,7 @@ async function generateTags({ text }) {
   if (!text?.trim()) throw new Error("Document text is required");
   if (text.trim().length < 20)
     throw new Error("Document too short to generate tags");
-  if (text.length > 10000)
+  if (text.length > 1000000)
     throw new Error("Document too long — max 10000 characters");
 
   const { text: raw, usage } = await generateResponse(buildTagsPrompt(text));

@@ -3,8 +3,25 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
-import rehypeSanitize from "rehype-sanitize";
-import DOMPurify from "dompurify";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import rehypeSlug from "rehype-slug";
+
+// Extend the default sanitize schema to preserve `id` attributes on headings.
+// Required for TOC anchor scroll — rehypeSanitize strips `id` by default.
+// All other sanitization rules remain unchanged.
+const sanitizeSchema = {
+  ...defaultSchema,
+  clobberPrefix: "",
+  attributes: {
+    ...defaultSchema.attributes,
+    h1: ["id"],
+    h2: ["id"],
+    h3: ["id"],
+    h4: ["id"],
+    h5: ["id"],
+    h6: ["id"],
+  },
+};
 
 const MarkdownRenderer = ({
   content = "",
@@ -12,8 +29,6 @@ const MarkdownRenderer = ({
   variant = "editor",
   maxHeight,
 }) => {
-  const clean = DOMPurify.sanitize(content || "");
-
   // ── Variant style maps ──────────────────────────────────────────────────
   const editorStyles = `
     [&_h1]:text-4xl      [&_h1]:font-black  [&_h1]:text-on-surface [&_h1]:mb-4  [&_h1]:mt-8
@@ -65,7 +80,33 @@ const MarkdownRenderer = ({
     [&_th]:border        [&_th]:border-primary/10 [&_th]:bg-surface-low
       [&_th]:px-3        [&_th]:py-2 [&_th]:text-left [&_th]:text-xs [&_th]:font-bold
     [&_td]:border        [&_td]:border-primary/10 [&_td]:px-3 [&_td]:py-2 [&_td]:text-sm
-  `;
+  // Links
+  [&_a]:text-primary        [&_a]:font-medium      [&_a]:underline
+  [&_a]:underline-offset-2  [&_a]:decoration-primary/40
+  [&_a]:transition-colors   [&_a]:duration-150
+  [&_a:hover]:text-primary/80   [&_a:hover]:decoration-primary/80
+
+  [&_hr]:border-t-2    [&_hr]:border-dashed [&_hr]:border-primary/20 [&_hr]:my-8
+  [&_img]:w-full       [&_img]:rounded-2xl [&_img]:my-4
+
+  // Table
+  [&_table]:w-full         [&_table]:border-collapse   [&_table]:overflow-hidden
+  [&_table]:rounded-xl     [&_table]:border             [&_table]:border-primary/10
+  [&_table]:my-6
+
+  [&_thead]:bg-surface-low
+
+  [&_th]:border-b          [&_th]:border-primary/10
+  [&_th]:px-4              [&_th]:py-2.5  [&_th]:text-left
+  [&_th]:text-xs           [&_th]:font-bold [&_th]:uppercase [&_th]:tracking-wide
+  [&_th]:text-on-surface-variant
+
+  [&_td]:border-b          [&_td]:border-primary/10
+  [&_td]:px-4              [&_td]:py-2.5 [&_td]:text-sm [&_td]:text-on-surface
+
+  [&_tbody_tr:last-child_td]:border-b-0
+  [&_tbody_tr:nth-child(even)]:bg-surface-low/40
+  [&_tbody_tr:hover]:bg-primary-fixed/50`;
 
   const chatStyles = `
     prose prose-sm max-w-none
@@ -125,7 +166,12 @@ const MarkdownRenderer = ({
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize, rehypeHighlight]}
+        rehypePlugins={[
+          rehypeRaw,
+          rehypeSlug,
+          [rehypeSanitize, sanitizeSchema],
+          rehypeHighlight,
+        ]}
         components={{
           pre: ({ children }) => <pre>{children}</pre>,
           code({ inline, className: cls, children }) {
@@ -134,7 +180,7 @@ const MarkdownRenderer = ({
           },
         }}
       >
-        {clean}
+        {content || ""}
       </ReactMarkdown>
     </div>
   );
