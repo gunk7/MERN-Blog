@@ -87,22 +87,86 @@ const BlogEditor = () => {
     originalStatus === "draft" ||
     originalStatus === "under_review";
 
+  const formik = useFormik({
+    enableReinitialize: true,
+    validationSchema: blogSchema,
+    initialValues: {
+      title: isEditMode && currentBlog ? currentBlog.title || "" : "",
+      description:
+        isEditMode && currentBlog ? currentBlog.description || "" : "",
+      contentJson:
+        isEditMode && currentBlog ? currentBlog.contentJson || {} : {},
+      contentHtml:
+        isEditMode && currentBlog ? currentBlog.contentHtml || "" : "",
+      category:
+        isEditMode && currentBlog ? currentBlog.category || "None" : "None",
+      status:
+        isEditMode && currentBlog ? currentBlog.status || "draft" : "draft",
+      scheduledFor:
+        isEditMode && currentBlog ? currentBlog.scheduledFor || "" : "",
+      tags: isEditMode && currentBlog ? currentBlog.tags || [] : [],
+      coverImage:
+        isEditMode && currentBlog ? currentBlog.coverImage || null : null,
+      images: isEditMode && currentBlog ? currentBlog.images || [] : [],
+    },
+    onSubmit: async (values) => {
+      attemptedStatusRef.current = values.status;
+      fallbackTriedRef.current = false;
+      const formData = new FormData();
+      formData.append("title", values.title);
+      formData.append("description", values.description);
+      formData.append("contentHtml", values.contentHtml?.trim() || "");
+      formData.append(
+        "contentJson",
+        JSON.stringify(values.contentJson || null),
+      );
+      formData.append("category", values.category);
+      formData.append("status", values.status);
+      if (values.status === "scheduled" && values.scheduledFor) {
+        formData.append(
+          "scheduledFor",
+          new Date(values.scheduledFor).toISOString(),
+        );
+      }
+      values.tags.forEach((tag) => formData.append("tags", tag));
+      if (values.coverImage instanceof File) {
+        formData.append("coverImage", values.coverImage);
+      } else if (typeof values.coverImage === "string" && values.coverImage) {
+        formData.append("existingCoverImage", values.coverImage); // tell backend to keep it
+      }
+      formData.append("images", JSON.stringify(values.images || []));
+      if (isEditMode) dispatch(updateBlog({ id, formData }));
+      else dispatch(createBlog(formData));
+    },
+  });
+
+  // Pulled out of the effect — derived during render, not as a side effect
+  if (
+    isEditMode &&
+    currentBlog &&
+    currentBlog._id === id &&
+    originalStatus === null
+  ) {
+    setOriginalStatus(currentBlog.status);
+  }
+
   useEffect(() => {
     if (isEditMode) dispatch(getBlogById(id));
     return () => dispatch(clearBlogState());
   }, [dispatch, id, isEditMode]);
 
   useEffect(() => {
-    if (isEditMode && currentBlog && currentBlog._id === id) {
-      if (currentBlog.coverImage) {
-        Promise.resolve().then(() => setPreview(currentBlog.coverImage));
-      }
-      if (originalStatus === null) {
-        setOriginalStatus(currentBlog.status);
-      }
+    if (
+      isEditMode &&
+      currentBlog &&
+      currentBlog._id === id &&
+      currentBlog.coverImage
+    ) {
+      Promise.resolve().then(() => setPreview(currentBlog.coverImage));
     }
-  }, [currentBlog, currentBlog?._id, id, isEditMode, originalStatus]);
+  }, [currentBlog, currentBlog?._id, id, isEditMode]);
 
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (createSuccess || updateSuccess) {
       fallbackTriedRef.current = false;
@@ -116,7 +180,6 @@ const BlogEditor = () => {
       });
 
       dispatch(clearBlogState());
-
       navigate("/my-blogs");
     }
 
@@ -170,9 +233,7 @@ const BlogEditor = () => {
         if (isEditMode) dispatch(updateBlog({ id, formData: draftFormData }));
         else dispatch(createBlog(draftFormData));
       } else {
-        toast.error(error, {
-          position: "bottom-right",
-        });
+        toast.error(error, { position: "bottom-right" });
       }
     }
   }, [
@@ -184,60 +245,11 @@ const BlogEditor = () => {
     isEditMode,
     draftKey,
     canFallbackToDraft,
+    id,
+    formik.setFieldValue,
+    formik.values,
   ]);
-
-  const formik = useFormik({
-    enableReinitialize: true,
-    validationSchema: blogSchema,
-    initialValues: {
-      title: isEditMode && currentBlog ? currentBlog.title || "" : "",
-      description:
-        isEditMode && currentBlog ? currentBlog.description || "" : "",
-      contentJson:
-        isEditMode && currentBlog ? currentBlog.contentJson || {} : {},
-      contentHtml:
-        isEditMode && currentBlog ? currentBlog.contentHtml || "" : "",
-      category:
-        isEditMode && currentBlog ? currentBlog.category || "None" : "None",
-      status:
-        isEditMode && currentBlog ? currentBlog.status || "draft" : "draft",
-      scheduledFor:
-        isEditMode && currentBlog ? currentBlog.scheduledFor || "" : "",
-      tags: isEditMode && currentBlog ? currentBlog.tags || [] : [],
-      coverImage:
-        isEditMode && currentBlog ? currentBlog.coverImage || null : null,
-      images: isEditMode && currentBlog ? currentBlog.images || [] : [],
-    },
-    onSubmit: async (values) => {
-      attemptedStatusRef.current = values.status;
-      fallbackTriedRef.current = false;
-      const formData = new FormData();
-      formData.append("title", values.title);
-      formData.append("description", values.description);
-      formData.append("contentHtml", values.contentHtml?.trim() || "");
-      formData.append(
-        "contentJson",
-        JSON.stringify(values.contentJson || null),
-      );
-      formData.append("category", values.category);
-      formData.append("status", values.status);
-      if (values.status === "scheduled" && values.scheduledFor) {
-        formData.append(
-          "scheduledFor",
-          new Date(values.scheduledFor).toISOString(),
-        );
-      }
-      values.tags.forEach((tag) => formData.append("tags", tag));
-      if (values.coverImage instanceof File) {
-        formData.append("coverImage", values.coverImage);
-      } else if (typeof values.coverImage === "string" && values.coverImage) {
-        formData.append("existingCoverImage", values.coverImage); // tell backend to keep it
-      }
-      formData.append("images", JSON.stringify(values.images || []));
-      if (isEditMode) dispatch(updateBlog({ id, formData }));
-      else dispatch(createBlog(formData));
-    },
-  });
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   const addTag = (value = tagInput) => {
     const trimmed = value.trim().toLowerCase();

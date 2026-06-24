@@ -20,7 +20,7 @@ import FloatingBubble from "./FloatingBubble";
 import TableToolbar from "./TableToolbar";
 import { MediaToolbar } from "./MediaToolbar";
 import TableOfContents from "./TableOfContents";
-import { injectHeadingIds, extractHeadings } from "../../utils/content";
+import { extractHeadings } from "../../utils/content";
 import HtmlRenderer from "./HtmlRenderer";
 import DocImporter from "./DocImporter";
 
@@ -91,7 +91,7 @@ const FriendlyMarkdownEditor = ({
       editor.commands.setContent(formikHtml, false);
   }, [editor, value]);
 
-  const previewRef = useRef(null);
+  //const previewRef = useRef(null);
 
   if (!editor) return null;
 

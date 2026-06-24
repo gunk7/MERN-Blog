@@ -31,10 +31,6 @@ const getImgDOM = (editor, pos) => {
 const AltTextEditor = ({ editor, pos, alt }) => {
   const [altText, setAltText] = useState(alt || "");
 
-  useEffect(() => {
-    setAltText(alt || "");
-  }, [alt, pos]);
-
   // Add highlight on mount, remove on unmount
   useEffect(() => {
     const img = getImgDOM(editor, pos);
@@ -48,11 +44,10 @@ const AltTextEditor = ({ editor, pos, alt }) => {
     const img = getImgDOM(editor, pos);
     if (!img) return;
     img.classList.add("img-highlight");
-  }, [altText]);
+  }, [altText, editor, pos]);
 
   const applyAlt = () => {
     editor.chain().focus().updateAttributes("image", { alt: altText }).run();
-    // Deselect the node so the bubble menu closes
     editor.commands.setTextSelection(editor.state.selection.from + 1);
   };
 
