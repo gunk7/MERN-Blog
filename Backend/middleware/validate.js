@@ -2,10 +2,11 @@
  * Generic Joi validation middleware
  * @param {Object} schema - The Joi schema to validate against
  */
-const validate = (schema) => (req, res, next) => {
-  const { error, value } = schema.validate(req.body, {
-    abortEarly: false, // Return all errors, not just the first one
-    stripUnknown: true, // Remove fields not defined in the schema
+const validate = (schema, source = "body") => (req, res, next) => {
+  const data = req[source];
+  const { error, value } = schema.validate(data, {
+    abortEarly: false,
+    stripUnknown: true,
   });
 
   if (error) {
@@ -19,8 +20,7 @@ const validate = (schema) => (req, res, next) => {
     });
   }
 
-  // Replace req.body with the cleaned/validated values
-  req.body = value;
+  req[source] = value;
   next();
 };
 

@@ -274,7 +274,7 @@ const TopBlogRow = ({ blog, rank }) => {
       </span>
       {blog.coverImage ? (
         <img
-          src={`${imgUrl}/${blog.coverImage}`}
+          src={`${blog.coverImage}`}
           alt={blog.title}
           className="w-10 h-10 rounded-xl object-cover shrink-0 border border-surface-highest/40"
         />

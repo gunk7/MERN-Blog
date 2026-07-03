@@ -69,7 +69,6 @@ export const fetchUserProfileAdmin = createAsyncThunk(
   async (username, { rejectWithValue }) => {
     try {
       const response = await API.get(`/api/admin/profile/${username}`);
-      // Based on your controller, the data is in response.data.data
       return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || error.message);

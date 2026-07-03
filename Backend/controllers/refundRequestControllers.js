@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 const RefundRequest = require("../models/refundRequestModel");
 const Subscription = require("../models/subscriptionModel");
@@ -11,8 +13,7 @@ const handleError = (res, error) => {
   res.status(500).json({ success: false, message: error.message });
 };
 
-exports.getAllRefundRequests = async (req, res) => {
-  try {
+exports.getAllRefundRequests = catchAsync(async (req, res) => {
     const { status } = req.query;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -88,13 +89,9 @@ exports.getAllRefundRequests = async (req, res) => {
       data: requests,
       pagination: { total, page, limit, pages: Math.ceil(total / limit) },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getRefundRequestById = async (req, res) => {
-  try {
+exports.getRefundRequestById = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     const [refundReq] = await RefundRequest.aggregate([
@@ -160,13 +157,9 @@ exports.getRefundRequestById = async (req, res) => {
     }
 
     return res.status(200).json({ success: true, data: refundReq });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 // POST /api/admin/refunds/:id/resolve
-exports.resolveRefundRequest = async (req, res) => {
-  try {
+exports.resolveRefundRequest = catchAsync(async (req, res) => {
     console.log("Resolving refund request:", req.params.id, req.body);
     const { refundType, refundAmount, userMessage, adminNote } = req.body;
     const adminId = req.user._id;
@@ -281,7 +274,4 @@ exports.resolveRefundRequest = async (req, res) => {
         refundAmount: refundReq.refundAmount,
       },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;

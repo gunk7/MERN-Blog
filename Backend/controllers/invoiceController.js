@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const fs = require("fs");
 const path = require("path");
 const Invoice = require("../models/invoiceModel");
@@ -8,8 +10,7 @@ const {
 } = require("../validations/invoiceValidation");
 
 // ── POST /api/invoices/upload-pdf ─────────────────────────────────────────────
-exports.uploadInvoicePdf = async (req, res) => {
-  try {
+exports.uploadInvoicePdf = catchAsync(async (req, res) => {
     /*  if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -86,33 +87,19 @@ exports.uploadInvoicePdf = async (req, res) => {
       success: true,
       data: { pdfUrl, invoice },
     });
-  } catch (err) {
-    console.error("Invoice upload error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: err.message });
-  }
-};
+  });;
 
 // ── GET /api/invoices/my ──────────────────────────────────────────────────────
-exports.getMyInvoices = async (req, res) => {
-  try {
+exports.getMyInvoices = catchAsync(async (req, res) => {
     const invoices = await Invoice.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .populate("planId", "name price interval");
 
     return res.json({ success: true, data: invoices });
-  } catch (err) {
-    console.error("Fetch invoices error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: err.message });
-  }
-};
+  });;
 
 // ── GET /api/invoices/transaction/:transactionId ──────────────────────────────
-exports.getInvoiceByTransaction = async (req, res) => {
-  try {
+exports.getInvoiceByTransaction = catchAsync(async (req, res) => {
     const { error, value } = getByTransactionSchema.validate(req.params);
     if (error) {
       return res
@@ -138,17 +125,10 @@ exports.getInvoiceByTransaction = async (req, res) => {
     }
 
     return res.json({ success: true, data: invoice });
-  } catch (err) {
-    console.error("Fetch invoice error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: err.message });
-  }
-};
+  });;
 
 // ── GET /api/invoices/:invoiceId ──────────────────────────────────────────────
-exports.getInvoiceById = async (req, res) => {
-  try {
+exports.getInvoiceById = catchAsync(async (req, res) => {
     const { error, value } = getByInvoiceIdSchema.validate(req.params);
     if (error) {
       return res
@@ -168,18 +148,11 @@ exports.getInvoiceById = async (req, res) => {
     }
 
     return res.json({ success: true, data: invoice });
-  } catch (err) {
-    console.error("Fetch invoice error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: err.message });
-  }
-};
+  });;
 
 // GET /api/invoices/session/:sessionId
 // PaymentStatus page uses this — session_id is all Stripe gives in the URL
-exports.getInvoiceBySession = async (req, res) => {
-  try {
+exports.getInvoiceBySession = catchAsync(async (req, res) => {
     const { sessionId } = req.params;
 
     // Find the transaction by checkoutSessionId
@@ -217,10 +190,4 @@ exports.getInvoiceBySession = async (req, res) => {
     }
 
     return res.json({ success: true, data: invoice });
-  } catch (err) {
-    console.error("Fetch invoice by session error:", err.message);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: err.message });
-  }
-};
+  });;

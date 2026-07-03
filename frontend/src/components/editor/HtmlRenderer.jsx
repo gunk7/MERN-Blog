@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import GithubSlugger from "github-slugger";
+import DOMPurify from "dompurify";
 
 const editorStyles = `
   [&_h1]:text-4xl      [&_h1]:font-black  [&_h1]:text-on-surface [&_h1]:mb-4  [&_h1]:mt-8
@@ -56,6 +57,33 @@ const editorStyles = `
 const HtmlRenderer = ({ content, className = "" }) => {
   const ref = useRef(null);
 
+  // Sanitize HTML from DB before rendering — prevents stored XSS.
+  // Allowlist covers all standard blog formatting; strips event handlers
+  // (onerror, onload, onclick…) and javascript: URIs entirely.
+  const sanitizedContent = DOMPurify.sanitize(content || "", {
+    ALLOWED_TAGS: [
+      "h1", "h2", "h3", "h4", "h5", "h6",
+      "p", "br", "hr",
+      "strong", "em", "u", "s", "b", "i",
+      "a", "img",
+      "ul", "ol", "li",
+      "blockquote",
+      "pre", "code",
+      "table", "thead", "tbody", "tr", "th", "td",
+      "div", "span",
+    ],
+    ALLOWED_ATTR: [
+      "href", "src", "alt", "title",
+      "class", "id",
+      "target", "rel",
+      "width", "height",
+      "colspan", "rowspan",
+    ],
+    // Force all links to open safely — prevents javascript: href attacks
+    FORCE_BODY: true,
+    ADD_ATTR: ["target"],
+  });
+
   useEffect(() => {
     if (!ref.current) return;
     const slugger = new GithubSlugger();
@@ -68,7 +96,7 @@ const HtmlRenderer = ({ content, className = "" }) => {
     <div
       ref={ref}
       className={`${editorStyles} ${className}`.trim()}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
     />
   );
 };

@@ -5,7 +5,7 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { AlignLeft, ChevronDown } from "lucide-react";
+import { AlignLeft, ChevronDown, ChevronsLeft, ChevronsRight, List } from "lucide-react";
 
 function buildHeadingTree(headings) {
   if (!headings?.length) return [];
@@ -29,7 +29,8 @@ function flattenIds(nodes, acc = []) {
   return acc;
 }
 
-// ── Single TOC item (recursive) ──────────────────────────────────────────────
+// ── Single TOC item (recursive) — ChatGPT-style row ──────────────────────────
+// Active state = thin left indicator line + slightly bolder text, not a filled pill.
 const TocNode = ({ node, depth, activeId, onSelect }) => {
   const isActive = activeId === node.id;
   const hasChildren = node.children?.length > 0;
@@ -48,23 +49,28 @@ const TocNode = ({ node, depth, activeId, onSelect }) => {
         type="button"
         data-toc-id={node.id}
         onClick={() => onSelect(node.id)}
-        className={`block w-full text-left rounded-lg leading-[1.5] break-words whitespace-normal cursor-pointer transition-colors duration-150
-          ${depth === 0 ? "px-2.5 py-2 text-[15px]" : "px-2.5 py-1.5 text-sm"}
+        className={`group relative block w-full text-left rounded-md leading-[1.45] wrap-break-word whitespace-normal cursor-pointer transition-colors duration-100
+          ${depth === 0 ? "px-3 py-1.5 text-[13px]" : "px-3 py-1 text-[12.5px]"}
           ${
             isActive
-              ? "bg-primary/8 text-primary font-medium"
-              : childIsActive
-                ? "text-on-surface font-normal"
-                : "text-on-surface-variant font-normal"
+              ? "bg-surface-low text-on-surface font-medium"
+              : "text-on-surface-variant hover:bg-surface-low/70 hover:text-on-surface font-normal"
           }`}
       >
-        {node.text}
+        {/* thin active indicator, ChatGPT-style — not a background fill */}
+        <span
+          className={`absolute left-0 top-1/2 -translate-y-1/2 h-[60%] w-[2.5px] rounded-full transition-opacity duration-150
+            ${isActive ? "bg-primary opacity-100" : "bg-primary opacity-0"}`}
+        />
+        <span className={childIsActive && !isActive ? "text-on-surface/80" : ""}>
+          {node.text}
+        </span>
       </button>
 
       {hasChildren && (
         <ul
           className="list-none mt-0.5 mb-0 flex flex-col gap-px"
-          style={{ paddingLeft: `${Math.min((depth + 1) * 14, 42)}px` }}
+          style={{ paddingLeft: `${Math.min((depth + 1) * 12, 36)}px` }}
         >
           {node.children.map((child) => (
             <TocNode
@@ -87,6 +93,7 @@ const TableOfContents = ({ headings }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolledPast, setScrolledPast] = useState(false);
   const [sideNavOpen, setSideNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false); // desktop rail collapse
 
   const navRef = useRef(null);
   const observerRef = useRef(null);
@@ -180,16 +187,63 @@ const TableOfContents = ({ headings }) => {
 
   return (
     <>
-      {/* ── Desktop sidebar ─────────────────────────────────────────────────── */}
+      {/* ── Desktop sidebar — ChatGPT-style rail ──────────────────────────────── */}
       <nav
         ref={navRef}
-        className="hidden xl:block sticky top-28 w-50 shrink-0 self-start overflow-visible"
+        className={`hidden xl:flex sticky top-28 shrink-0 self-start flex-col transition-[width] duration-200 ease-in-out
+          ${collapsed ? "w-10" : "w-52"}`}
         aria-label="Table of contents"
-      >s
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-on-surface-variant/60">
-          Contents
-        </p>
-        {tocList}
+      >
+        <div
+          className={`flex items-center mb-3 ${collapsed ? "justify-center" : "justify-between px-3"}`}
+        >
+          {!collapsed && (
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-on-surface-variant/50 m-0">
+              Contents
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand table of contents" : "Collapse table of contents"}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-on-surface-variant/50
+                       hover:bg-surface-low hover:text-on-surface transition-colors duration-100 cursor-pointer"
+          >
+            {collapsed ? <List size={14} /> : <ChevronsLeft size={14} />}
+          </button>
+        </div>
+
+        {collapsed ? (
+          // Collapsed: slim rail of dots, click any to expand + jump
+          <ul className="list-none m-0 p-0 flex flex-col items-center gap-2.5 pt-1">
+            {tree.map((node) => {
+              const isActive =
+                activeId === node.id ||
+                flattenIds(node.children || []).includes(activeId);
+              return (
+                <li key={node.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCollapsed(false);
+                      handleSelect(node.id);
+                    }}
+                    title={node.text}
+                    aria-label={node.text}
+                    className="block cursor-pointer rounded-full p-0.5 hover:bg-surface-low transition-colors duration-100"
+                  >
+                    <span
+                      className={`block h-1.5 w-1.5 rounded-full transition-all duration-150
+                        ${isActive ? "bg-primary scale-125" : "bg-on-surface-variant/30"}`}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="relative">{tocList}</div>
+        )}
       </nav>
 
       {/* ── Mobile: inline expandable list ──────────────────────────────────── */}
@@ -235,7 +289,7 @@ const TableOfContents = ({ headings }) => {
         {/* Expanded label panel */}
         <div
           className={`overflow-hidden rounded-xl border border-primary/15 bg-surface-lowest shadow-md transition-all duration-200
-      ${sideNavOpen ? "max-w-[180px] opacity-100" : "max-w-0 opacity-0"}`}
+      ${sideNavOpen ? "max-w-45 opacity-100" : "max-w-0 opacity-0"}`}
         >
           <ul className="list-none m-0 flex flex-col gap-0.5 p-1.5 whitespace-nowrap">
             {tree.map((node) => {

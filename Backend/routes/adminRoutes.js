@@ -6,7 +6,9 @@ const adminPlanController = require("../controllers/planControllers");
 const adminSubController = require("../controllers/subControllers");
 const adminTransController = require("../controllers/transController");
 const adminUsageController = require("../controllers/usageControllers");
-const adminRefundController= require("../controllers/refundRequestControllers")
+const adminRefundController = require("../controllers/refundRequestControllers");
+const adminErrorController = require("../controllers/errorContoller");
+const consoleLogController = require("../controllers/consoleLogController");
 const { isAdmin } = require("../middleware/adminMiddlware");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { uploadSingleImage } = require("../middleware/multerMiddlware");
@@ -96,5 +98,21 @@ route.patch(
   validateObjectId("id"),
   adminRefundController.resolveRefundRequest,
 );
+//error
+
+// ─── Error Management ──────────────────────────────────────────────────────────
+route.get("/errors", adminErrorController.getErrorLogs);
+route.get("/errors/by-category", adminErrorController.getErrorsByCategory);
+route.get("/errors/by-error-code", adminErrorController.getErrorsByErrorCode);
+route.patch("/errors/:id/resolve", adminErrorController.updateErrorResolution);
+route.get("/errors/:id", adminErrorController.getErrorLogById);
+route.get("/errors/:id/source", adminErrorController.getErrorSourceContext);
+
+// ─── Console Log Routes ────────────────────────────────────────────────────────
+route.get("/console-logs/stats", consoleLogController.getConsoleLogStats);
+route.get("/console-logs", consoleLogController.getConsoleLogs);
+// delete single or multiple console logs
+route.delete("/console-logs/:id", consoleLogController.deleteConsoleLog);
+route.delete("/console-logs", consoleLogController.deleteConsoleLogs);
 
 module.exports = route;

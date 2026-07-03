@@ -2,13 +2,14 @@ const express = require("express");
 const route = express.Router();
 const commentController = require("../controllers/commentController");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const validate = require("../middleware/validate");
 const {
-  validate,
   createCommentValidation,
   querySchema,
   updateCommentValidation,
   likeCommentValidation,
 } = require("../validations/commentValidation");
+const { paramsObjectIdSchema } = require("../validations/commonValidation");
 
 // Create a new comment
 route.post(
@@ -21,6 +22,7 @@ route.post(
 // Get comments for a blog post
 route.get(
   "/blog/:blogId",
+  validate(paramsObjectIdSchema("blogId"), "params"),
   validate(querySchema, "query"),
   commentController.getComments,
 );
@@ -28,6 +30,7 @@ route.get(
 // Get replies for a comment
 route.get(
   "/replies/:commentId",
+  validate(paramsObjectIdSchema("commentId"), "params"),
   validate(querySchema, "query"),
   commentController.getComments,
 );
@@ -36,6 +39,7 @@ route.get(
 route.put(
   "/:commentId",
   authMiddleware,
+  validate(paramsObjectIdSchema("commentId"), "params"),
   validate(updateCommentValidation, "body"),
   commentController.updateComment,
 );
@@ -47,6 +51,7 @@ route.delete("/:commentId", authMiddleware, commentController.deleteComment);
 route.post(
   "/like/:commentId",
   authMiddleware,
+  validate(paramsObjectIdSchema("commentId"), "params"),
   validate(likeCommentValidation, "body"),
   commentController.toggleLike,
 );

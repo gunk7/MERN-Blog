@@ -1,7 +1,8 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const Plan = require("../models/planModel");
 
-exports.getPlans = async (req, res) => {
-  try {
+exports.getPlans = catchAsync(async (req, res) => {
     const loggedInUser = req.user;
     const isAdmin = loggedInUser?.role === "admin";
 
@@ -17,18 +18,9 @@ exports.getPlans = async (req, res) => {
         ? "All plans fetched (Admin View)"
         : "Plans fetched successfully",
     });
-  } catch (error) {
-    console.error("Error in Fetching Plans: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in Fetching Plans",
-    });
-  }
-};
+  });;
 
-exports.getPlanById = async (req, res) => {
-  try {
+exports.getPlanById = catchAsync(async (req, res) => {
     const { id } = req.params;
     const loggedInUser = req.user;
     const isAdmin = loggedInUser?.role === "admin";
@@ -52,18 +44,9 @@ exports.getPlanById = async (req, res) => {
       data: plan,
       message: "Plan detials fetched successfully",
     });
-  } catch (error) {
-    console.error("Error in getting this plan: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in Fetching this Plan",
-    });
-  }
-};
+  });;
 
-exports.createPlan = async (req, res) => {
-  try {
+exports.createPlan = catchAsync(async (req, res) => {
     console.log("req.body", req.body); // ← add this
     const plan = await Plan.create(req.body);
     res.status(201).json({
@@ -71,18 +54,9 @@ exports.createPlan = async (req, res) => {
       data: plan,
       message: "Plan Created Successfully",
     });
-  } catch (error) {
-    console.error("Error in Creating Plan: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in Creating Plan",
-    });
-  }
-};
+  });;
 
-exports.updatePlan = async (req, res) => {
-  try {
+exports.updatePlan = catchAsync(async (req, res) => {
     delete req.body.slug;
 
     const plan = await Plan.findById(req.params.id);
@@ -100,18 +74,9 @@ exports.updatePlan = async (req, res) => {
       data: plan,
       message: "Plan Updated Successfully",
     });
-  } catch (error) {
-    console.error("Error in Updating Plan: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in Updating Plan",
-    });
-  }
-};
+  });;
 
-exports.deletePlan = async (req, res) => {
-  try {
+exports.deletePlan = catchAsync(async (req, res) => {
     const plan = await Plan.findById(req.params.id);
     if (!plan || plan.isDeleted) {
       return res.status(404).json({
@@ -126,18 +91,9 @@ exports.deletePlan = async (req, res) => {
       data: false,
       message: "Plan Deactivated Successfully",
     });
-  } catch (error) {
-    console.error("Error in Deleting Plan: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in Deleting Plan",
-    });
-  }
-};
+  });;
 
-exports.getPlanStats = async (req, res) => {
-  try {
+exports.getPlanStats = catchAsync(async (req, res) => {
     const [
       overviewStats,
       statusBreakdown,
@@ -376,12 +332,4 @@ exports.getPlanStats = async (req, res) => {
         topPlans,
       },
     });
-  } catch (error) {
-    console.error("[getPlanStats] Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch plan stats",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-};
+  });;

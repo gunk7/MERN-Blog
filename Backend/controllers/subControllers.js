@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const Subscription = require("../models/subscriptionModel");
 const Plan = require("../models/planModel");
 const Transaction = require("../models/transactionModel");
@@ -31,8 +33,7 @@ const handleError = (res, error) => {
     .json({ success: false, data: false, message: "Internal Server Error" });
 };
 
-exports.selectFreePlan = async (req, res) => {
-  try {
+exports.selectFreePlan = catchAsync(async (req, res) => {
     const userId = req.user._id;
 
     const existingSubscription = await Subscription.findOne({
@@ -91,13 +92,9 @@ exports.selectFreePlan = async (req, res) => {
       data: subscription,
       message: "Free plan activated successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getMySubscriptions = async (req, res) => {
-  try {
+exports.getMySubscriptions = catchAsync(async (req, res) => {
     const userId = req.user._id;
 
     const subscriptions = await Subscription.find({ userId })
@@ -131,13 +128,9 @@ exports.getMySubscriptions = async (req, res) => {
       data: { current, past },
       message: "Subscriptions retrieved successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.toggleAutoRenewal = async (req, res) => {
-  try {
+exports.toggleAutoRenewal = catchAsync(async (req, res) => {
     const subscription = await Subscription.findOne({
       userId: req.user._id,
       status: "active",
@@ -168,13 +161,9 @@ exports.toggleAutoRenewal = async (req, res) => {
       data: { autoRenew: subscription.autoRenew },
       message: `Auto-renew ${subscription.autoRenew ? "enabled" : "disabled"}.`,
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.cancelSubscription = async (req, res) => {
-  try {
+exports.cancelSubscription = catchAsync(async (req, res) => {
     const userId = req.user._id;
 
     const subscription = await Subscription.findOne({
@@ -210,13 +199,9 @@ exports.cancelSubscription = async (req, res) => {
       data: subscription,
       message: "Subscription cancelled successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.refundRequest = async (req, res) => {
-  try {
+exports.refundRequest = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const { reason } = req.body;
 
@@ -315,13 +300,9 @@ exports.refundRequest = async (req, res) => {
         "Refund request submitted. Our team will review and notify you by email.",
       data: { requestId: refundReq._id },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getRefundStatus = async (req, res) => {
-  try {
+exports.getRefundStatus = catchAsync(async (req, res) => {
     const userId = req.user._id;
 
     // Find the most recent cancelled subscription
@@ -373,13 +354,9 @@ exports.getRefundStatus = async (req, res) => {
       },
       message: "Refund request retrieved successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getSubscriptionStats = async (req, res) => {
-  try {
+exports.getSubscriptionStats = catchAsync(async (req, res) => {
     const { search, name, interval, status } = req.query;
     const query = {};
 
@@ -431,13 +408,9 @@ exports.getSubscriptionStats = async (req, res) => {
       },
       message: "Subscription statistics retrieved successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getAllSubscriptions = async (req, res) => {
-  try {
+exports.getAllSubscriptions = catchAsync(async (req, res) => {
     const { search, name, interval, status } = req.query;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -499,13 +472,9 @@ exports.getAllSubscriptions = async (req, res) => {
       },
       message: "Subscriptions retrieved successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.createCheckoutSession = async (req, res) => {
-  try {
+exports.createCheckoutSession = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const userEmail = req.user.email;
     const { planId } = req.body;
@@ -580,12 +549,4 @@ exports.createCheckoutSession = async (req, res) => {
       data: { checkoutUrl: session.url },
       message: "Checkout session created successfully",
     });
-  } catch (error) {
-    console.error("Checkout Session Error:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: error.message || "Failed to create checkout session",
-    });
-  }
-};
+  });;

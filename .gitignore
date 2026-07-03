@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 
 # Environment
@@ -20,3 +20,4 @@ Backend/logs/
 *.log
 
 # Logger file
+service_layer_plan.txt

@@ -13,6 +13,8 @@ import {
   Calendar,
   CurrencyIcon,
   HandCoins,
+  Bug,
+  Terminal,
 } from "lucide-react";
 import { logout } from "../../redux/slice/authSlice";
 import { selectCurrentUser } from "../../redux/selectors/authSelectors";
@@ -50,6 +52,8 @@ const AdminLayout = () => {
     },
     ,
     { to: "/refund", icon: <HandCoins size={16} />, label: "Refund " },
+    { to: "/error", icon: <Bug size={16} />, label: "Errors" },
+    { to: "/console", icon: <Terminal size={16} />, label: "Console" },
   ];
 
   const NavContent = ({ isMobile = false }) => (

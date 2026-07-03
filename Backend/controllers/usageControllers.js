@@ -1,11 +1,12 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const UsageLog = require("../models/usageModel");
 
 const Subscription = require("../models/subscriptionModel");
 const AddonPurchase = require("../models/addonPurchaseModel");
 const { FREE_PLAN, getCurrentMonth } = require("../middleware/checkUsageLimit");
 
-exports.getMyUsage = async (req, res) => {
-  try {
+exports.getMyUsage = catchAsync(async (req, res) => {
     const userId = req.user.id;
     const month = getCurrentMonth();
 
@@ -61,31 +62,13 @@ exports.getMyUsage = async (req, res) => {
         analyticsAccess: plan.features.analyticsAccess,
       },
     });
-  } catch (error) {
-    console.error("Error fetching usage:", error);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error fetching usage",
-    });
-  }
-};
+  });;
 
-/* exports.getUsageStats = async (req, res) => {
-  try {
+/* exports.getUsageStats = catchAsync(async (req, res) => {
 
-  } catch (error) {
-    console.error("Error fetching usage stats:", error);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error fetching usage stats",
-    });
-  }
-}; */
+  });; */
 
-exports.getAllUsage = async (req, res) => {
-  try {
+exports.getAllUsage = catchAsync(async (req, res) => {
     const { month } = req.query;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -119,18 +102,9 @@ exports.getAllUsage = async (req, res) => {
       },
       message: "Usage records retrieved successfully.",
     });
-  } catch (error) {
-    console.error("Error fetching all usage:", error);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error fetching all usage",
-    });
-  }
-};
+  });;
 
-exports.getUserUsageById = async (req, res) => {
-  try {
+exports.getUserUsageById = catchAsync(async (req, res) => {
     const usage = await UsageLog.find({
       userId: req.params.userId,
     })
@@ -143,13 +117,4 @@ exports.getUserUsageById = async (req, res) => {
       data: usage,
       message: "User usage retrieved successfully.",
     });
-  } catch (error) {
-    console.error("Error fetching user usage:", error);
-
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error fetching user usage",
-    });
-  }
-};
+  });;

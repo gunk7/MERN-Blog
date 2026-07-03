@@ -1,26 +1,83 @@
 const express = require("express");
 const route = express.Router();
 const authController = require("../controllers/authController");
+const validate = require("../middleware/validate");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { authLimiter, otpLimiter } = require("../middleware/rateLimiters");
+const {
+  signupSchema,
+  verifySchema,
+  resendOtpSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  refreshSchema,
+  logoutSchema,
+} = require("../validations/authValidation");
 
-route.post("/signup", authController.signup);
-route.post("/verify", authController.verifyAndCreateUser);
-route.post("/resendOtp", authController.resendOtp);
+route.post(
+  "/signup",
+  authLimiter,
+  validate(signupSchema),
+  authController.signup,
+);
+route.post(
+  "/verify",
+  otpLimiter,
+  validate(verifySchema),
+  authController.verifyAndCreateUser,
+);
+route.post(
+  "/resendOtp",
+  otpLimiter,
+  validate(resendOtpSchema),
+  authController.resendOtp,
+);
 
 route.get("/google", authController.googleAuth);
 route.get("/google/callback", authController.googleCallback);
-route.post("/refresh", authController.refresh);
+route.post(
+  "/refresh",
+  validate(refreshSchema),
+  authController.refresh,
+);
 
-route.post("/login", authController.login);
+route.post(
+  "/login",
+  authLimiter,
+  validate(loginSchema),
+  authController.login,
+);
 
-route.post("/forgot_password", authController.forgotPassword);
-route.post("/reset_password", authController.resetPassword);
+route.post(
+  "/forgot_password",
+  otpLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword,
+);
+route.post(
+  "/reset_password",
+  otpLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword,
+);
 route.post(
   "/change_password_request",
   authMiddleware,
   authController.changePasswordReq,
 );
-route.post("/change_password", authMiddleware, authController.changePassword);
+route.post(
+  "/change_password",
+  authMiddleware,
+  validate(changePasswordSchema),
+  authController.changePassword,
+);
 
-route.post("/logout", authMiddleware, authController.logout);
+route.post(
+  "/logout",
+  authMiddleware,
+  validate(logoutSchema),
+  authController.logout,
+);
 module.exports = route;

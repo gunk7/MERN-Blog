@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const stripe = require("../config/stripe");
 const Plan = require("../models/planModel");
 const Subscription = require("../models/subscriptionModel");
@@ -15,7 +17,7 @@ const statusMap = {
   unpaid: "past_due",
 };
 
-exports.handleStripeWebhook = async (req, res) => {
+exports.handleStripeWebhook = catchAsync(async (req, res) => {
   const signature = req.headers["stripe-signature"];
   let event;
 
@@ -668,4 +670,4 @@ exports.handleStripeWebhook = async (req, res) => {
       message: "Webhook processing failed",
     });
   }
-};
+});;

@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const userModel = require("../models/userModel");
 const userDetail = require("../models/userDetail");
 const { Blog } = require("../models/blogModel");
@@ -9,8 +11,7 @@ const path = require("path");
 const { DEFAULT_AVATAR } = require("../config/defaults");
 
 //Admin Dashboard
-exports.getAllUsers = async (req, res) => {
-  try {
+exports.getAllUsers = catchAsync(async (req, res) => {
     const {
       search,
       searchBy,
@@ -98,17 +99,9 @@ exports.getAllUsers = async (req, res) => {
       users: users || [],
       user: req.user || null,
     });
-  } catch (err) {
-    console.error("Dashboard Fetch Error:", err);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while fetching users",
-    });
-  }
-};
+  });;
 
-exports.updateUserProfile = async (req, res) => {
-  try {
+exports.updateUserProfile = catchAsync(async (req, res) => {
     const targetUserId = req.params.id;
     const loggedInUser = req.user;
 
@@ -245,18 +238,9 @@ exports.updateUserProfile = async (req, res) => {
         profile: updatedUserDetail,
       },
     });
-  } catch (error) {
-    console.error("Update Profile Error:", error);
+  });;
 
-    return res.status(500).json({
-      success: false,
-      message: "Something Went Wrong",
-    });
-  }
-};
-
-exports.deleteUser = async (req, res) => {
-  try {
+exports.deleteUser = catchAsync(async (req, res) => {
     const targetUserId = req.params.id;
     const loggedInUser = req.user;
 
@@ -286,17 +270,9 @@ exports.deleteUser = async (req, res) => {
       message: "User and all associated profile data permanently erased.",
       deletedId: targetUserId,
     });
-  } catch (error) {
-    console.error("Delete User Error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Something Went Wrong while deleting the user",
-    });
-  }
-};
+  });;
 
-exports.toggleUserStatus = async (req, res) => {
-  try {
+exports.toggleUserStatus = catchAsync(async (req, res) => {
     const targetUserId = req.params.id;
     const loggedInUser = req.user;
 
@@ -322,19 +298,11 @@ exports.toggleUserStatus = async (req, res) => {
       success: true,
       message: `User status updated to ${user.isAccountVerified ? "verified" : "unverified"}.`,
     });
-  } catch (error) {
-    console.error("Toggle User Status Error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Something Went Wrong while toggling user status",
-    });
-  }
-};
+  });;
 
 //User Profile.
 
-exports.getMyProfile = async (req, res) => {
-  try {
+exports.getMyProfile = catchAsync(async (req, res) => {
     const userId = new mongoose.Types.ObjectId(req.user._id);
 
     const user = await userModel.findById(userId);
@@ -395,16 +363,11 @@ exports.getMyProfile = async (req, res) => {
       success: true,
       data: { userDetail: userProfile, isOwner: true },
     });
-  } catch (error) {
-    console.error("Aggregation Error: ", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-};
+  });;
 
 //Public Profile
 
-exports.getPublicProfile = async (req, res) => {
-  try {
+exports.getPublicProfile = catchAsync(async (req, res) => {
     const { username } = req.params;
     const requesterId = req.user?._id || null;
 
@@ -479,19 +442,9 @@ exports.getPublicProfile = async (req, res) => {
         isFollowing: user.isFollowing,
       },
     });
-  } catch (error) {
-    console.error("Error in getting Public Profile:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message:
-        error.message || "Somehting went wrong while getting user profile",
-    });
-  }
-};
+  });;
 
-exports.getUserProfileAdmin = async (req, res) => {
-  try {
+exports.getUserProfileAdmin = catchAsync(async (req, res) => {
     const { username } = req.params;
 
     if (!username) {
@@ -610,21 +563,11 @@ exports.getUserProfileAdmin = async (req, res) => {
         blogs,
       },
     });
-  } catch (error) {
-    console.error("Error in getUserProfileAdmin:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message:
-        error.message || "Something went wrong while getting user profile",
-    });
-  }
-};
+  });;
 
 //search user by username
 
-exports.searchUsers = async (req, res) => {
-  try {
+exports.searchUsers = catchAsync(async (req, res) => {
     const { q, page = 1, limit = 10 } = req.query;
     if (!q || !q.trim()) {
       return res.status(400).json({
@@ -691,19 +634,10 @@ exports.searchUsers = async (req, res) => {
         },
       },
     });
-  } catch (error) {
-    console.error("Error in fetching users: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in searching users",
-    });
-  }
-};
+  });;
 
 //Admin controllers
-exports.getAdminProfile = async (req, res) => {
-  try {
+exports.getAdminProfile = catchAsync(async (req, res) => {
     const adminId = new mongoose.Types.ObjectId(req.user._id);
     const admin = await userModel
       .findOne({ _id: adminId, role: "admin" })
@@ -723,18 +657,9 @@ exports.getAdminProfile = async (req, res) => {
       message: "Admin profile fetched successfully",
       data: admin,
     });
-  } catch (error) {
-    console.error("Error in Fetching Admin Profile: ", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in fetching admin profile",
-    });
-  }
-};
+  });;
 
-exports.getDashboardStats = async (req, res) => {
-  try {
+exports.getDashboardStats = catchAsync(async (req, res) => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const [
@@ -836,10 +761,4 @@ exports.getDashboardStats = async (req, res) => {
         topBlogs,
       },
     });
-  } catch (error) {
-    console.error("getDashboardStats error:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-};
+  });;

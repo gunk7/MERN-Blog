@@ -10,6 +10,8 @@ import createTransform from "redux-persist/es/createTransform";
 import adminSubscriptionSlice from "./redux/slice/adminSubscriptionSlice";
 import adminTransactionSlice from "./redux/slice/adminTransactionSlice";
 import adminRefundSlice from "./redux/slice/adminRefundSlice";
+import adminErrorSlice from "./redux/slice/adminErrorSlice";
+import adminConsoleLogSlice from "./redux/slice/adminConsoleLogSlice";
 
 const authTransform = createTransform(
   (state) => ({
@@ -44,6 +46,8 @@ const rootReducer = combineReducers({
   adminSubscriptions: adminSubscriptionSlice,
   adminTransactions: adminTransactionSlice,
   adminRefunds: adminRefundSlice,
+  adminError: adminErrorSlice,
+  adminConsoleLogs: adminConsoleLogSlice,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

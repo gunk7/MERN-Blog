@@ -10,6 +10,8 @@ const {
   uploadBlogFiles,
 } = require("../middleware/multerMiddlware");
 
+const validate = require("../middleware/validate");
+const { paramsObjectIdSchema } = require("../validations/commonValidation");
 const {
   validateCreateBlog,
   validateUpdateBlog,
@@ -48,9 +50,17 @@ route.get("/my-blogs", authMiddleware, blogController.getMyBlogs);
 
 route.get("/", blogController.getAllBlogs);
 
-route.get("/id/:id", blogController.getBlogById);
+route.get(
+  "/id/:id",
+  validate(paramsObjectIdSchema("id"), "params"),
+  blogController.getBlogById,
+);
 
-route.get("/user/:userId", blogController.getBlogsByUser);
+route.get(
+  "/user/:userId",
+  validate(paramsObjectIdSchema("userId"), "params"),
+  blogController.getBlogsByUser,
+);
 
 /* ─────────────────────────────────────────────
    UPDATE BLOG

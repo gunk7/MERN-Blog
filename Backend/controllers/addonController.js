@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const AddonPurchase = require("../models/addonPurchaseModel.js");
 const Plan = require("../models/planModel");
 const Subscription = require("../models/subscriptionModel");
@@ -11,8 +13,7 @@ const handleError = (res, error) => {
     message: error.message || "An error occurred. Please try again later.",
   });
 };
-exports.getAddonPlans = async (req, res) => {
-  try {
+exports.getAddonPlans = catchAsync(async (req, res) => {
     const plans = await Plan.find({
       type: "add_on",
       isActive: true,
@@ -29,13 +30,9 @@ exports.getAddonPlans = async (req, res) => {
       success: true,
       data: { plans },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.createAddonCheckout = async (req, res) => {
-  try {
+exports.createAddonCheckout = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const userEmail = req.user.email;
     const { planId } = req.body;
@@ -102,14 +99,10 @@ exports.createAddonCheckout = async (req, res) => {
       success: true,
       data: { checkoutUrl: session.url },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
 // ── Get user's active addons ──────────────────────────────────────────────────
-exports.getMyAddons = async (req, res) => {
-  try {
+exports.getMyAddons = catchAsync(async (req, res) => {
     const userId = req.user._id;
 
     const addons = await AddonPurchase.find({
@@ -129,7 +122,4 @@ exports.getMyAddons = async (req, res) => {
       success: true,
       data: { addons, totalAddonTokens },
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;

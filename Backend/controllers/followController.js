@@ -1,10 +1,11 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const Follow = require("../models/followModel");
 const Blog = require("../models/blogModel");
 const User = require("../models/userModel");
 const aggregatePaginate = require("../utils/aggregate");
 
-exports.followUser = async (req, res) => {
-  try {
+exports.followUser = catchAsync(async (req, res) => {
     const { followingId } = req.params;
     const followerId = req.user._id;
 
@@ -55,18 +56,9 @@ exports.followUser = async (req, res) => {
       data: null,
       message: "User followed successfully",
     });
-  } catch (error) {
-    console.error("Error in following user", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Error following user",
-    });
-  }
-};
+  });;
 
-exports.unfollowUser = async (req, res) => {
-  try {
+exports.unfollowUser = catchAsync(async (req, res) => {
     const { followingId } = req.params;
     const followerId = req.user._id;
 
@@ -93,18 +85,9 @@ exports.unfollowUser = async (req, res) => {
       data: null,
       message: "User unfollowed successfully",
     });
-  } catch (error) {
-    console.error("Error in unfollowing user", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Error unfollowing user",
-    });
-  }
-};
+  });;
 
-exports.getFollowers = async (req, res) => {
-  try {
+exports.getFollowers = catchAsync(async (req, res) => {
     const { userId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -169,18 +152,9 @@ exports.getFollowers = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error in fetching followers", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Error fetching followers",
-    });
-  }
-};
+  });;
 
-exports.getFollowing = async (req, res) => {
-  try {
+exports.getFollowing = catchAsync(async (req, res) => {
     const { userId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -245,12 +219,4 @@ exports.getFollowing = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error in fetching following", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Error fetching following",
-    });
-  }
-};
+  });;

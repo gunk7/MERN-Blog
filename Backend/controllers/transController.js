@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const Transaction = require("../models/transactionModel");
 const handleError = (res, error) => {
   console.error("[SubscriptionController]", error.message);
@@ -8,8 +10,7 @@ const handleError = (res, error) => {
   });
 };
 // GET /transactions
-exports.getMyTransactions = async (req, res) => {
-  try {
+exports.getMyTransactions = catchAsync(async (req, res) => {
     const transactions = await Transaction.find({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .populate("planId", "name price interval")
@@ -20,13 +21,9 @@ exports.getMyTransactions = async (req, res) => {
       data: transactions,
       message: "Transactions fetched successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 // GET /transactions/:id
-exports.getTransactionById = async (req, res) => {
-  try {
+exports.getTransactionById = catchAsync(async (req, res) => {
     const transaction = await Transaction.findOne({
       _id: req.params.id,
       userId: req.user._id, // scope to this user — don't let users see others'
@@ -47,14 +44,10 @@ exports.getTransactionById = async (req, res) => {
       data: transaction,
       message: "Transaction fetched successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
 //admin controller to get all transactions
-exports.getTransactionStats = async (req, res) => {
-  try {
+exports.getTransactionStats = catchAsync(async (req, res) => {
     const [
       totalTransactions,
       paidTransactions,
@@ -106,13 +99,9 @@ exports.getTransactionStats = async (req, res) => {
       },
       message: "Transaction stats fetched successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getAllTransactions = async (req, res) => {
-  try {
+exports.getAllTransactions = catchAsync(async (req, res) => {
     const { status, paymentProvider, startDate, endDate, currency } = req.query;
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -173,13 +162,9 @@ exports.getAllTransactions = async (req, res) => {
       },
       message: "Transactions fetched successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
+  });;
 
-exports.getUserTransactions = async (req, res) => {
-  try {
+exports.getUserTransactions = catchAsync(async (req, res) => {
     const userId = req.params.userId;
 
     const transactions = await Transaction.find({ userId })
@@ -191,12 +176,8 @@ exports.getUserTransactions = async (req, res) => {
       data: transactions,
       message: "User transactions fetched successfully.",
     });
-  } catch (error) {
-    handleError(res, error);
-  }
-};
-exports.getInvoice = async (req, res) => {
-  try {
+  });;
+exports.getInvoice = catchAsync(async (req, res) => {
     const transaction = await Transaction.findOne({
       _id: req.params.transactionId,
       userId: req.user._id, // ensure user owns it
@@ -226,10 +207,4 @@ exports.getInvoice = async (req, res) => {
         paidAt: transaction.paidAt,
       },
     });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+  });;

@@ -1,10 +1,11 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const Comment = require("../models/commentModel");
 const { Blog } = require("../models/blogModel");
 const aggregatePaginate = require("../utils/aggregate");
 
 // Create a new comment
-exports.createComment = async (req, res) => {
-  try {
+exports.createComment = catchAsync(async (req, res) => {
     const { blogId, content, parentCommentId } = req.body;
     const authorId = req.user._id;
 
@@ -47,18 +48,9 @@ exports.createComment = async (req, res) => {
       data: newComment,
       message: "Comment created successfully",
     });
-  } catch (error) {
-    console.error("Error in comment creation", error.message);
-    res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;
 /* // Get comments for a blog with pagination and author details
-exports.getBlogComments = async (req, res) => {
-  try {
+exports.getBlogComments = catchAsync(async (req, res) => {
     const { blogId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -123,19 +115,10 @@ exports.getBlogComments = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error in fetching blog comments", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;
 
 // Get replies for a comment with pagination and author details
-exports.getCommentReplies = async (req, res) => {
-  try {
+exports.getCommentReplies = catchAsync(async (req, res) => {
     const { commentId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
@@ -209,18 +192,9 @@ exports.getCommentReplies = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error in fetching comment replies", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-}; */
+  });; */
 
-exports.getComments = async (req, res) => {
-  try {
+exports.getComments = catchAsync(async (req, res) => {
     const { blogId, commentId } = req.params;
     const { page, limit } = req.query;
 
@@ -355,18 +329,10 @@ exports.getComments = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error fetching comments/replies", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;
 
 // Update a comment (only content can be updated)
-exports.updateComment = async (req, res) => {
-  try {
+exports.updateComment = catchAsync(async (req, res) => {
     const { commentId } = req.params;
     const { content } = req.body;
     const userId = req.user._id;
@@ -400,19 +366,10 @@ exports.updateComment = async (req, res) => {
       data: comment,
       message: "Comment updated successfully",
     });
-  } catch (error) {
-    console.error("Error in updating comment", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;
 
 //Soft delete - set deletedAt timestamp instead of removing the document
-exports.deleteComment = async (req, res) => {
-  try {
+exports.deleteComment = catchAsync(async (req, res) => {
     const { commentId } = req.params;
     const userId = req.user._id;
     const userRole = req.user.role;
@@ -446,20 +403,11 @@ exports.deleteComment = async (req, res) => {
       data: targetComment,
       message: "Comment deleted successfully",
     });
-  } catch (error) {
-    console.error("Error in deleting comment", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;
 
 // Toggle like/unlike on a comment
 
-exports.toggleLike = async (req, res) => {
-  try {
+exports.toggleLike = catchAsync(async (req, res) => {
     const { commentId } = req.params;
     const userId = req.user._id;
 
@@ -485,12 +433,4 @@ exports.toggleLike = async (req, res) => {
       data: { liked: !hasLiked, likesCount: comment.likes.length },
       message: hasLiked ? "Like removed" : "Comment liked",
     });
-  } catch (error) {
-    console.error("Error in toggling like", error.message);
-    return res.status(500).json({
-      success: false,
-      data: null,
-      message: "Something went wrong",
-    });
-  }
-};
+  });;

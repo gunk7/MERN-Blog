@@ -19,6 +19,8 @@ import AdminTransactionsPage from "./pages/admin/AdminTransactionsPage";
 import PublicRoute from "./middleware/PublicRoute";
 import AdminProfilePage from "./pages/admin/AdminProfilePage";
 import AdminRefundRequestsPage from "./pages/admin/AdminRefundRequestPage";
+import AdminErrorManagement from "./pages/admin/AdminErrorManagement";
+import AdminConsoleLogsPage from "./pages/admin/AdminConsoleLogsPage";
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
           <Route path="/subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="/transactions" element={<AdminTransactionsPage />} />
           <Route path="/refund" element={<AdminRefundRequestsPage />} />
+          <Route path="/error" element={<AdminErrorManagement />} />
+          <Route path="/console" element={<AdminConsoleLogsPage />} />
           <Route
             path="/users/profile/:username"
             element={<AdminUserProfile />}

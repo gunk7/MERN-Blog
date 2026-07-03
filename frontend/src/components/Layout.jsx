@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { LogOut, PenSquare, Menu, X } from "lucide-react";
@@ -26,6 +26,13 @@ const Layout = () => {
   // State for Logout Modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  // Footer reveal: hidden by default, slides up into view only once the
+  // user has scrolled all the way to the bottom; slides back out the
+  // moment they scroll up again (mirrors the header's reveal/hide logic).
+  const [footerVisible, setFooterVisible] = useState(false);
+  const [footerHeight, setFooterHeight] = useState(0);
+  const footerRef = useRef(null);
+
   const dashboardLink = user?.role === "admin" ? "/dashboard" : "/profile";
   const dashboardLabel = user?.role === "admin" ? "Dashboard" : "Profile";
 
@@ -44,6 +51,46 @@ const Layout = () => {
     window.addEventListener("scroll", controlNavbar);
     return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY, isMenuOpen]);
+
+  // Footer: fixed to the bottom of the viewport. Reveals only when the user
+  // hits the very bottom of the page. The instant they scroll back up —
+  // even slightly — it slides out and stays hidden until they scroll back
+  // down to the bottom again.
+  useEffect(() => {
+    let prevScrollY = window.scrollY;
+
+    const controlFooter = () => {
+      const currentScrollY = window.scrollY;
+      const scrolledUp = currentScrollY < prevScrollY;
+      const docHeight = document.documentElement.scrollHeight;
+      const atBottom = currentScrollY + window.innerHeight >= docHeight - 4;
+
+      if (scrolledUp) {
+        setFooterVisible(false);
+      } else if (atBottom) {
+        setFooterVisible(true);
+      }
+
+      prevScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", controlFooter, { passive: true });
+    // Run once on mount in case the page loads already scrolled to bottom
+    controlFooter();
+    return () => window.removeEventListener("scroll", controlFooter);
+  }, []);
+
+  // Measure footer height so <main> can reserve space for it and avoid
+  // content being covered when the footer slides into view.
+  useEffect(() => {
+    if (!footerRef.current) return;
+    const el = footerRef.current;
+    const observer = new ResizeObserver((entries) => {
+      setFooterHeight(entries[0].contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Handle actual logout via thunk
   const handleConfirmLogout = async (allDevices = false) => {
@@ -241,12 +288,27 @@ const Layout = () => {
           </nav>
         </div>
       </header>
-      <div className="transition-all duration-300 ease-in-out ai-panel-shift">
-        <main className="grow pt-20">
+
+      {/* ── Sticky-footer wrapper ──────────────────────────────────────────
+          The footer is now `fixed` to the viewport bottom rather than
+          flowing in-document — it only slides into view once the user
+          scrolls to the very bottom of the page, and slides back out the
+          instant they scroll up. `main` reserves bottom padding equal to
+          the footer's measured height so its content is never covered. */}
+      <div className="flex-1 flex flex-col transition-all duration-300 ease-in-out ai-panel-shift">
+        <main
+          className="flex-1 pt-20"
+          style={{ paddingBottom: footerVisible ? footerHeight : 0 }}
+        >
           <Outlet />
         </main>
 
-        <footer className="bg-white border-t border-primary/10 py-12 px-6 mt-auto">
+        <footer
+          ref={footerRef}
+          className={`fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-primary/10 py-12 px-6 transition-transform duration-500 ease-editorial ${
+            footerVisible ? "translate-y-0" : "translate-y-full"
+          }`}
+        >
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
             <div className="flex flex-col items-center md:items-start gap-2">
               <h2 className="text-2xl font-black tracking-tighter">

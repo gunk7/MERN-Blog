@@ -29,8 +29,16 @@ const getByInvoiceIdSchema = Joi.object({
     }),
 });
 
+const getBySessionIdSchema = Joi.object({
+  sessionId: Joi.string().trim().required().messages({
+    "any.required": "sessionId is required",
+    "string.empty": "sessionId cannot be empty",
+  }),
+});
+
 module.exports = {
   uploadPdfSchema,
   getByTransactionSchema,
   getByInvoiceIdSchema,
+  getBySessionIdSchema,
 };

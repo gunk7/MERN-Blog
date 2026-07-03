@@ -1,3 +1,5 @@
+const { AppError } = require("../utils/errorUtils");
+const catchAsync = require("../utils/catchAsync");
 const { fstat } = require("fs");
 const { Blog } = require("../models/blogModel");
 const userModel = require("../models/userModel");
@@ -64,8 +66,7 @@ const sanitizeBlogHtml = (html = "") => {
    CREATE BLOG
 ───────────────────────────────────────────── */
 
-exports.createBlog = async (req, res) => {
-  try {
+exports.createBlog = catchAsync(async (req, res) => {
     const { title, description, category, status, scheduledFor, tags } =
       req.body;
 
@@ -172,22 +173,13 @@ exports.createBlog = async (req, res) => {
         blog,
       },
     });
-  } catch (error) {
-    console.error("CREATE BLOG ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
+  });;
 
 /* ─────────────────────────────────────────────
    UPDATE BLOG
 ───────────────────────────────────────────── */
 
-exports.updateBlog = async (req, res) => {
-  try {
+exports.updateBlog = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -354,22 +346,13 @@ exports.updateBlog = async (req, res) => {
         blog: updatedBlog,
       },
     });
-  } catch (error) {
-    console.error("UPDATE BLOG ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
+  });;
 
 /* ─────────────────────────────────────────────
    INLINE IMAGE UPLOAD
 ───────────────────────────────────────────── */
 
-/* exports.uploadInlineImage = async (req, res) => {
-  try {
+/* exports.uploadInlineImage = catchAsync(async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -390,18 +373,9 @@ exports.updateBlog = async (req, res) => {
       success: true,
       images,
     });
-  } catch (error) {
-    console.error("INLINE IMAGE ERROR:", error);
+  });; */
 
-    return res.status(500).json({
-      success: false,
-      message: "Image upload failed",
-    });
-  }
-}; */
-
-exports.uploadInlineImage = async (req, res) => {
-  try {
+exports.uploadInlineImage = catchAsync(async (req, res) => {
     console.log("req.files:", req.files);
     console.log("req.cloudinaryFiles:", req.cloudinaryFiles);
     if (!req.cloudinaryFiles?.image?.length) {
@@ -422,16 +396,9 @@ exports.uploadInlineImage = async (req, res) => {
       success: true,
       images,
     });
-  } catch (error) {
-    console.error("INLINE IMAGE ERROR:", error);
-    return res
-      .status(500)
-      .json({ success: false, data: false, message: "Image upload failed" });
-  }
-};
+  });;
 
-exports.getAllBlogs = async (req, res) => {
-  try {
+exports.getAllBlogs = catchAsync(async (req, res) => {
     console.log(req.query);
     const { search, category, page, limit } = req.query;
 
@@ -522,18 +489,9 @@ exports.getAllBlogs = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error in fetching all blogs:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Error in fetchiing Blogs",
-    });
-  }
-};
+  });;
 
-exports.getBlogById = async (req, res) => {
-  try {
+exports.getBlogById = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -615,16 +573,9 @@ exports.getBlogById = async (req, res) => {
       message: "Blog fetched successfully",
       data: { blog: blog[0] },
     });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-};
+  });;
 
-exports.getMyBlogs = async (req, res) => {
-  try {
+exports.getMyBlogs = catchAsync(async (req, res) => {
     const { id } = req.user;
     const blogs = await Blog.find({
       authorId: id,
@@ -637,14 +588,9 @@ exports.getMyBlogs = async (req, res) => {
       data: { blogs },
       message: "Blogs fetched successfully",
     });
-  } catch (error) {
-    console.error("Error fetching user's blogs:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+  });;
 
-exports.getBlogsByUser = async (req, res) => {
-  try {
+exports.getBlogsByUser = catchAsync(async (req, res) => {
     const { userId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -668,18 +614,9 @@ exports.getBlogsByUser = async (req, res) => {
       message: "Blogs fetched successfully",
       data: { blogs },
     });
-  } catch (error) {
-    console.error("Error fetching user blogs:", error);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Something Went Wrong while fecting user Blogs",
-    });
-  }
-};
+  });;
 
-exports.getBlogBySlug = async (req, res) => {
-  try {
+exports.getBlogBySlug = catchAsync(async (req, res) => {
     const slug = req.params.slug;
     const userId = req.user?._id;
 
@@ -765,16 +702,9 @@ exports.getBlogBySlug = async (req, res) => {
       message: "Blog fetched successfully",
       data: { blog: result[0] },
     });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal server error" });
-  }
-};
+  });;
 
-exports.deleteBlog = async (req, res) => {
-  try {
+exports.deleteBlog = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -798,18 +728,9 @@ exports.deleteBlog = async (req, res) => {
       message: "Blog deleted successfully",
       data: null,
     });
-  } catch (error) {
-    console.error("Error deleting blog:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      data: null,
-    });
-  }
-};
+  });;
 
-exports.toggleLikeBlog = async (req, res) => {
-  try {
+exports.toggleLikeBlog = catchAsync(async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
@@ -846,19 +767,10 @@ exports.toggleLikeBlog = async (req, res) => {
       message: hasLiked ? "Blog unliked" : "Blog liked",
       data: { likesCount: blog.likesCount },
     });
-  } catch (error) {
-    console.error("Error toggling like for blog:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      data: null,
-    });
-  }
-};
+  });;
 
 //Admin contollers
-exports.getAllBlogsAdmin = async (req, res) => {
-  try {
+exports.getAllBlogsAdmin = catchAsync(async (req, res) => {
     const { search, category, status, page, limit, deleted } = req.query; // ← deleted add karo
 
     // ── Base query ──────────────────────────────────────────────
@@ -956,17 +868,9 @@ exports.getAllBlogsAdmin = async (req, res) => {
         hasPrevPage: pagination.hasPrevPage,
       },
     });
-  } catch (error) {
-    console.error("Error fetching blogs in adminPanel:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Admin: Something went wrong fetching blogs",
-    });
-  }
-};
+  });;
 
-exports.getBlogByAdmin = async (req, res) => {
-  try {
+exports.getBlogByAdmin = catchAsync(async (req, res) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -1039,18 +943,9 @@ exports.getBlogByAdmin = async (req, res) => {
       data: { blog: blog[0] },
       message: "Admin: Blog Fetched SUccessfully",
     });
-  } catch (error) {
-    console.error("Admin getBlogById error:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  });;
 
-exports.updateBlogStatus = async (req, res) => {
-  try {
+exports.updateBlogStatus = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { status, scheduledFor, adminNote } = req.body;
 
@@ -1127,17 +1022,9 @@ exports.updateBlogStatus = async (req, res) => {
       message: `Blog status updated to '${status}'`,
       data: { blog },
     });
-  } catch (error) {
-    console.error("Admin updateBlogStatus error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  });;
 
-exports.deleteBlogAdmin = async (req, res) => {
-  try {
+exports.deleteBlogAdmin = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { hard, reason } = req.query;
 
@@ -1183,17 +1070,9 @@ exports.deleteBlogAdmin = async (req, res) => {
       message: "Blog moved to Under Review",
       data: { blog: updated },
     });
-  } catch (error) {
-    console.error("Admin deleteBlog error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: error.message || "Internal server error",
-    });
-  }
-};
+  });;
 
-exports.getActivityChart = async (req, res) => {
-  try {
+exports.getActivityChart = catchAsync(async (req, res) => {
     const days = parseInt(req.query.days) || 30;
     const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -1234,12 +1113,4 @@ exports.getActivityChart = async (req, res) => {
       },
       message: "Blogs Fetched Successfully",
     });
-  } catch (error) {
-    console.error("getActivityChart error:", error.message);
-    return res.status(500).json({
-      success: false,
-      data: false,
-      message: error.messsage || "Internal server error",
-    });
-  }
-};
+  });;
